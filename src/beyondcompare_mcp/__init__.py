@@ -1,11 +1,24 @@
 """
 Beyond Compare MCP Server
+========================
 
-A FastMCP 2.10 compliant MCP server that provides file and directory comparison
-capabilities using Beyond Compare.
+A modern MCP 2.11+ compliant server that provides file and directory comparison
+capabilities using Beyond Compare. Built with security, reliability, and 
+performance in mind.
+
+Features:
+- File and folder comparison with Beyond Compare's powerful engine
+- Directory synchronization with multiple sync modes
+- Secure input validation and subprocess execution
+- Modern MCP 2.11+ compliance
+- Cross-platform support (Windows, macOS, Linux)
 """
 
-__version__ = "0.1.0"
+# Version will be replaced during build
+try:
+    from ._version import __version__
+except ImportError:
+    __version__ = "0.1.0"  # fallback version
 
 from .server import BeyondCompareMCP
 from .exceptions import (
@@ -13,12 +26,15 @@ from .exceptions import (
     BeyondCompareNotInstalledError,
     BeyondCompareCommandError,
     BeyondCompareTimeoutError,
+    BeyondCompareScriptError,
 )
 
 __all__ = [
+    "__version__",
     "BeyondCompareMCP",
     "BeyondCompareError",
     "BeyondCompareNotInstalledError",
     "BeyondCompareCommandError",
     "BeyondCompareTimeoutError",
+    "BeyondCompareScriptError",
 ]
