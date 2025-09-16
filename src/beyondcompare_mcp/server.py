@@ -343,17 +343,18 @@ class BeyondCompareMCP:
                     "right_path": right_path,
                 }
 
-            # Build command arguments
-            args = [str(left), str(right)]
+            # Build command arguments for silent comparison
+            # Beyond Compare 5 requires /qc (Quick Compare) for command-line operation
+            args = ["/silent", "/qc", str(left), str(right)]
 
             # Add report generation if requested
             if output_report:
                 report_path = self._validate_path(output_report)
                 report_path.parent.mkdir(parents=True, exist_ok=True)
-                args.extend(["/silent", "/qc=text-conflicts", f"/o={report_path}"])
+                args.extend(["/qc=text-conflicts", f"/o={report_path}"])
 
             # Run the comparison
-            result = self._run_bc_command([str(arg) for arg in args])
+            result = self._run_bc_command(args)
 
             return {
                 "success": True,

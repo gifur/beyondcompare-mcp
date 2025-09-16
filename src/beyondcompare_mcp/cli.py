@@ -10,13 +10,17 @@ from .config import settings
 
 
 def setup_logging(log_level: str = "INFO") -> None:
-    """Configure logging for the application."""
+    """Configure logging for the application.
+    
+    CRITICAL: For MCP servers using stdio transport, logs MUST go to stderr,
+    not stdout. stdout is reserved for JSON-RPC messages only.
+    """
     level = getattr(logging, log_level.upper(), logging.INFO)
     logging.basicConfig(
         level=level,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[
-            logging.StreamHandler(sys.stdout),
+            logging.StreamHandler(sys.stderr),  # FIXED: Use stderr instead of stdout
         ],
     )
 
@@ -62,7 +66,7 @@ def main(args: Optional[List[str]] = None) -> int:
 
     if parsed_args.version:
         from . import __version__
-        print(f"Beyond Compare MCP Server v{__version__}")
+        print(f"Beyond Compare MCP Server v{__version__}", file=sys.stderr)  # FIXED: Use stderr
         return 0
 
     # Configure logging
