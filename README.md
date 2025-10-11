@@ -1,4 +1,4 @@
-﻿# Beyond Compare MCP
+# Beyond Compare MCP
 
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![MCP Version](https://img.shields.io/badge/MCP-2.11%2B-green.svg)](https://modelcontextprotocol.io/)
@@ -8,25 +8,25 @@
 
 A modern MCP server that provides file and directory comparison capabilities using Beyond Compare. Built with security, reliability, and performance in mind.
 
-## âœ¨ Features
+## ✨ Features
 
-- **ðŸ”„ File and Folder Comparison**: Compare files and directories with Beyond Compare's powerful engine
-- **ðŸ” Directory Synchronization**: Keep folders in sync with various sync modes (mirror, update, backup)
-- **ðŸ“Š Diff Report Generation**: Generate detailed comparison reports in multiple formats
+- **🔍 File and Folder Comparison**: Compare files and directories with Beyond Compare's powerful engine
+- **⇄ Directory Synchronization**: Keep folders in sync with various sync modes (mirror, update, backup)
+- **📊 Diff Report Generation**: Generate detailed comparison reports in multiple formats
 - **🛡️ Security First**: Comprehensive input validation and secure subprocess execution  
 - **🚀 MCP Compliant**: Built on the Model Context Protocol standards
-- **ðŸ“¦ DXT Packaging**: Easy deployment with DXT packages for Claude Desktop
-- **ðŸŒ Cross-Platform**: Works on Windows, macOS, and Linux
+- **📦 DXT Packaging**: Easy deployment with DXT packages for Claude Desktop
+- **🌐 Cross-Platform**: Works on Windows, macOS, and Linux
 
-## ðŸ›¡ï¸ Security & Quality
+## ✅ Security & Quality
 
-âœ… **Production Ready** - Comprehensive security audit passed  
-âœ… **Input Validation** - Command injection and path traversal protection  
-âœ… **Secure Dependencies** - Official MCP SDK 2.11+ with verified packages  
-âœ… **Test Coverage** - 85%+ test coverage with security tests  
-âœ… **Modern Architecture** - Python 3.10+ with type hints and async support
+✅ **Production Ready** - Comprehensive security audit passed  
+✅ **Input Validation** - Command injection and path traversal protection  
+✅ **Secure Dependencies** - Official MCP SDK 2.11+ with verified packages  
+✅ **Test Coverage** - 85%+ test coverage with security tests  
+✅ **Modern Architecture** - Python 3.10+ with type hints and async support
 
-## ðŸš€ Installation
+## 🚀 Installation
 
 ### Prerequisites
 
@@ -49,7 +49,7 @@ cd beyondcompare-mcp
 pip install -e ".[dev]"
 ```
 
-## âš™ï¸ Configuration
+## ⚙️ Configuration
 
 The MCP server auto-detects Beyond Compare installation (including Beyond Compare 5), but you can customize via environment variables:
 
@@ -67,7 +67,7 @@ BC_SCRIPTS_DIR="./bc_scripts"
 COMMAND_TIMEOUT=30
 ```
 
-## ðŸ› ï¸ Available Tools
+## 🛠️ Available Tools
 
 The MCP server provides these tools to AI models:
 
@@ -117,7 +117,7 @@ Synchronize directories using Beyond Compare
 - `update`: Copy newer files from source to target
 - `backup`: Copy only missing files to target
 
-## ðŸ§ª Development & Testing
+## 🧪 Development & Testing
 
 ```bash
 # Install development dependencies
@@ -148,7 +148,7 @@ The package (`dist/beyondcompare-mcp-0.1.0.dxt`) includes:
 - ✅ Secure launch scripts with proper validation
 - ✅ Cross-platform compatibility
 
-## ðŸ”’ Security Features
+## 🔒 Security Features
 
 - **Input Validation**: All file paths and arguments validated against injection attacks
 - **Path Security**: Prevention of path traversal with `..` detection
@@ -156,7 +156,7 @@ The package (`dist/beyondcompare-mcp-0.1.0.dxt`) includes:
 - **Temp File Safety**: Secure temporary file handling with unique names
 - **Dependency Verification**: All dependencies verified and security-audited
 
-## ðŸ“‹ System Requirements
+## 📋 System Requirements
 
 | Component | Requirement |
 |-----------|------------|
@@ -166,18 +166,18 @@ The package (`dist/beyondcompare-mcp-0.1.0.dxt`) includes:
 | Disk Space | 10MB for DXT package |
 | OS | Windows 10+, macOS 10.15+, Linux (Ubuntu 20.04+) |
 
-## ðŸ¤ Contributing
+## 🫶 Contributing
 
 Contributions welcome! Please see:
 - [Contributing Guidelines](CONTRIBUTING.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Security Policy](docs/SECURITY-ADVISORY.md)
 
-## ðŸ“„ License
+## 📜 License
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
-## ðŸ”— Links
+## 🔗 Links
 
 - **Beyond Compare**: https://www.scootersoftware.com/
 - **Model Context Protocol**: https://modelcontextprotocol.io/

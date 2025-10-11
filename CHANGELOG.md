@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Documentation for MCP compliance and DXT packaging
 - GitHub Actions workflow for CI/CD
 
+### Fixed
+- Fixed mojibake and encoding issues in README.md
+- Standardized emoji usage across documentation
+- Ensured proper display of special characters and symbols
+
 ## [0.1.1] - 2025-08-16
 
 ### Added
@@ -74,11 +79,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Basic file and folder comparison functionality
 - Folder synchronization capabilities
 - DXT packaging support
-
-### Security
-- ⚠️ **CRITICAL VULNERABILITIES PRESENT** - This version contains multiple security issues
-- ❌ Command injection vulnerabilities
-- ❌ Path traversal vulnerabilities  
-- ❌ Insecure temporary file handling
-- ❌ Insufficient input validation
-- **STATUS:** DO NOT USE - Upgrade to 0.1.1+ immediately

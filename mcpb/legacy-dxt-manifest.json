@@ -1,0 +1,131 @@
+{
+  "dxt_version": "1.0",
+  "name": "beyondcompare-mcp",
+  "version": "0.1.0",
+  "description": "Beyond Compare MCP Server - File and directory comparison capabilities",
+  "long_description": "A Model Context Protocol (MCP) server that provides file and directory comparison capabilities using Beyond Compare. This server enables AI models to compare files, synchronize directories, and generate comparison reports through Beyond Compare's powerful comparison engine.",
+  "author": {
+    "name": "Beyond Compare MCP Team",
+    "email": "support@beyondcompare-mcp.com",
+    "url": "https://github.com/yourusername/beyondcompare-mcp"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/beyondcompare-mcp"
+  },
+  "homepage": "https://github.com/yourusername/beyondcompare-mcp",
+  "documentation": "https://github.com/yourusername/beyondcompare-mcp/blob/main/README.md",
+  "support": "https://github.com/yourusername/beyondcompare-mcp/issues",
+  "license": "MIT",
+  "keywords": [
+    "file-comparison",
+    "directory-sync",
+    "beyond-compare",
+    "mcp",
+    "ai-tools"
+  ],
+  "icon": "assets/icon.png",
+  "screenshots": ["assets/screenshot1.png", "assets/screenshot2.png"],
+  "server": {
+    "type": "python",
+    "entry_point": "beyondcompare_mcp.server:main",
+    "mcp_config": {
+      "command": "python",
+      "args": ["-m", "beyondcompare_mcp.cli"],
+      "cwd": "src",
+      "env": {
+        "PYTHONPATH": "src",
+        "BEYOND_COMPARE_PATH": "{{beyond_compare_executable}}",
+        "BC_SCRIPTS_DIR": "{{workspace_directory}}/bc_scripts",
+        "LOG_LEVEL": "{{log_level}}",
+        "COMMAND_TIMEOUT": "300",
+        "PYTHONUNBUFFERED": "1"
+      }
+    }
+  },
+  "user_config": {
+    "beyond_compare_executable": {
+      "type": "string",
+      "title": "Beyond Compare Executable",
+      "description": "Path to Beyond Compare executable (BCompare.exe on Windows, bcompare on Linux/Mac)",
+      "required": false,
+      "default": "BCompare.exe"
+    },
+    "workspace_directory": {
+      "type": "string",
+      "title": "Workspace Directory",
+      "description": "Directory for temporary script files and comparison reports",
+      "required": false,
+      "default": "{{extension_dir}}/workspace"
+    },
+    "log_level": {
+      "type": "string",
+      "title": "Log Level",
+      "description": "Logging verbosity level",
+      "required": false,
+      "default": "INFO"
+    },
+    "command_timeout": {
+      "type": "number",
+      "title": "Command Timeout",
+      "description": "Timeout for Beyond Compare operations in seconds",
+      "required": false,
+      "default": 300,
+      "min": 30,
+      "max": 3600
+    }
+  },
+  "tools": [
+    {
+      "name": "compare_files",
+      "description": "Compare two files using Beyond Compare and return detailed comparison results"
+    },
+    {
+      "name": "compare_folders",
+      "description": "Compare two folders using Beyond Compare with optional subfolder inclusion"
+    },
+    {
+      "name": "sync_folders",
+      "description": "Synchronize folders using Beyond Compare with various sync modes (mirror, update, backup)"
+    }
+  ],
+  "prompts": [
+    {
+      "name": "file_comparison_analysis",
+      "description": "Analyze file comparison results and provide insights",
+      "arguments": ["comparison_result", "context"],
+      "text": "Based on the file comparison results, analyze the differences and provide actionable insights."
+    }
+  ],
+  "tools_generated": true,
+  "prompts_generated": false,
+  "compatibility": {
+    "platforms": ["win32", "linux", "darwin"],
+    "python_version": ">=3.10"
+  },
+  "permissions": {
+    "filesystem": {
+      "read": ["user_files", "temp_files"],
+      "write": ["temp_files", "reports"],
+      "directories": ["workspace", "comparison_reports"]
+    },
+    "network": {
+      "allowed": false,
+      "domains": []
+    },
+    "system": {
+      "execute_external": true,
+      "processes": ["beyond_compare"]
+    }
+  },
+  "dependencies": {
+    "python": ["mcp>=1.0.0", "python-dotenv>=1.0.0", "pydantic>=2.0.0"],
+    "system": {
+      "beyond_compare": {
+        "description": "Beyond Compare file comparison tool",
+        "required": true,
+        "install_url": "https://www.scootersoftware.com/download.php"
+      }
+    }
+  }
+}
