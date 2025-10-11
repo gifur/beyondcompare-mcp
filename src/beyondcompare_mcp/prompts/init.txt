@@ -105,11 +105,14 @@ try:
         output_report="/reports/diff.html"
     )
     if result["success"]:
-        print(f"Comparison complete. Report saved to {result['data']['report_path']}")
+        # Use structured logging instead of print
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Comparison complete. Report saved to {result['data']['report_path']}")
     else:
-        print(f"Error: {result['error']}")
+        logger.error(f"Error: {result['error']}")
 except Exception as e:
-    print(f"Error comparing files: {str(e)}")
+    logger.error(f"Error comparing files: {str(e)}")
 ```
 
 ## Troubleshooting

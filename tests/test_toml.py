@@ -2,7 +2,10 @@
 """Test script to validate pyproject.toml syntax and dependencies."""
 
 import sys
-import tomllib
+try:
+    import tomllib  # Python 3.11+
+except ImportError:
+    import tomli as tomllib  # Python 3.10 fallback
 from pathlib import Path
 
 def test_toml_syntax():

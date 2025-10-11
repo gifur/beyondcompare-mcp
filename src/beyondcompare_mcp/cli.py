@@ -66,7 +66,8 @@ def main(args: Optional[List[str]] = None) -> int:
 
     if parsed_args.version:
         from . import __version__
-        print(f"Beyond Compare MCP Server v{__version__}", file=sys.stderr)  # FIXED: Use stderr
+        logger = logging.getLogger(__name__)
+        logger.info(f"Beyond Compare MCP Server v{__version__}")
         return 0
 
     # Configure logging
