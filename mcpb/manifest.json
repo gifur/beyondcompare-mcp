@@ -85,6 +85,34 @@
     {
       "name": "detect_usb_drives",
       "description": "Detect and list all connected USB drives with detailed information"
+    },
+    {
+      "name": "backup_dev_repositories",
+      "description": "Smart backup of development repositories with intelligent filtering and compression"
+    },
+    {
+      "name": "analyze_dev_workspace",
+      "description": "Comprehensive analysis of development workspace including languages, dependencies, and optimization opportunities"
+    },
+    {
+      "name": "scan_repo_health",
+      "description": "Scan repository health and identify potential issues with automated fix options"
+    },
+    {
+      "name": "cleanup_dev_artifacts",
+      "description": "Clean up build artifacts and temporary files across repositories to reclaim disk space"
+    },
+    {
+      "name": "find_duplicate_code",
+      "description": "Find duplicate code across repositories for refactoring opportunities"
+    },
+    {
+      "name": "compare_workspace_snapshots",
+      "description": "Compare workspace snapshots to identify changes over time"
+    },
+    {
+      "name": "selective_restore",
+      "description": "Selectively restore specific projects or files from backup with flexible filtering"
     }
   ],
   "tools_generated": true,

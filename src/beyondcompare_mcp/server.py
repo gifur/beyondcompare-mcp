@@ -11,8 +11,12 @@ import platform
 import shutil
 import subprocess
 import tempfile
+import time
+import json
+import fnmatch
+import hashlib
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Set
 
 # Modern FastMCP 2.11+ import
 from fastmcp import FastMCP
@@ -26,6 +30,12 @@ from .exceptions import (
     BeyondCompareScriptError,
 )
 from .multimedia_scanner import MultimediaDriveScanner
+from .tools.developer import (
+    DevRepositoryBackup,
+    WorkspaceAnalyzer,
+    RepositoryHealthChecker,
+    CodeDuplicateDetector
+)
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +60,12 @@ class BeyondCompareMCP:
         
         # Initialize multimedia scanner
         self.multimedia_scanner = MultimediaDriveScanner()
+        
+        # Initialize developer tools
+        self.dev_backup = DevRepositoryBackup(self.bc_path)
+        self.workspace_analyzer = WorkspaceAnalyzer(self.bc_path)
+        self.health_checker = RepositoryHealthChecker(self.bc_path)
+        self.duplicate_detector = CodeDuplicateDetector(self.bc_path)
 
         # Initialize modern FastMCP 2.11+
         self.mcp = FastMCP(
@@ -631,6 +647,202 @@ class BeyondCompareMCP:
                 "sync_mode": sync_mode,
                 "message": f"Synchronization failed: {e}",
             }
+
+        # Developer Backup and Repository Management Tools
+        @self.mcp.tool()
+        def backup_dev_repositories(
+            source_path: str,
+            backup_path: str,
+            exclude_patterns: Optional[List[str]] = None,
+            include_git_essentials: bool = True,
+            compress: bool = True,
+            incremental: bool = True,
+            dry_run: bool = False
+        ) -> Dict[str, Any]:
+            """Smart backup of development repositories with intelligent filtering.
+            
+            Backs up source code repositories while excluding build artifacts,
+            dependencies, and other non-essential files. Preserves Git history
+            and project structure while saving significant space.
+            
+            Args:
+                source_path: Path to development workspace (e.g., D:/dev/repos)
+                backup_path: Destination for backup files
+                exclude_patterns: Additional patterns to exclude (beyond defaults)
+                include_git_essentials: Keep essential Git files (.git/config, refs, etc.)
+                compress: Create compressed archives for each repository
+                incremental: Only backup repositories that have changed
+                dry_run: Preview operations without executing them
+                
+            Returns:
+                Backup summary with repository counts, space saved, and operation details
+            """
+            return self.dev_backup.backup_repositories(
+                source_path, backup_path, exclude_patterns,
+                include_git_essentials, compress, incremental, dry_run
+            )
+
+        @self.mcp.tool()
+        def analyze_dev_workspace(
+            workspace_path: str,
+            report_path: Optional[str] = None,
+            include_git_stats: bool = True,
+            include_dependencies: bool = True,
+            include_size_analysis: bool = True
+        ) -> Dict[str, Any]:
+            """Analyze development workspace for insights and optimization opportunities.
+            
+            Scans all repositories in a workspace to provide comprehensive analysis
+            including languages used, repository sizes, last activity, dependencies,
+            and potential cleanup opportunities.
+            
+            Args:
+                workspace_path: Path to development workspace to analyze
+                report_path: Optional path to save detailed HTML report
+                include_git_stats: Include Git repository statistics
+                include_dependencies: Analyze package.json, requirements.txt, etc.
+                include_size_analysis: Calculate disk usage and identify large files
+                
+            Returns:
+                Comprehensive workspace analysis with recommendations
+            """
+            return self.workspace_analyzer.analyze_workspace(
+                workspace_path, report_path, include_git_stats,
+                include_dependencies, include_size_analysis
+            )
+
+        @self.mcp.tool()
+        def scan_repo_health(
+            repos_path: str,
+            checks: Optional[List[str]] = None,
+            report_path: Optional[str] = None,
+            fix_issues: bool = False
+        ) -> Dict[str, Any]:
+            """Scan repository health and identify potential issues.
+            
+            Performs comprehensive health checks on all repositories including
+            Git status, large files, security issues, outdated dependencies,
+            and disk usage analysis.
+            
+            Args:
+                repos_path: Path to repositories directory
+                checks: List of checks to perform (git_status, large_files, security_issues, etc.)
+                report_path: Optional path to save detailed health report
+                fix_issues: Attempt to automatically fix detected issues
+                
+            Returns:
+                Health scan results with issue counts and recommendations
+            """
+            return self.health_checker.scan_repository_health(
+                repos_path, checks, report_path, fix_issues
+            )
+
+        @self.mcp.tool()
+        def cleanup_dev_artifacts(
+            repos_path: str,
+            targets: Optional[List[str]] = None,
+            size_threshold_mb: float = 100,
+            dry_run: bool = True
+        ) -> Dict[str, Any]:
+            """Clean up build artifacts and temporary files across repositories.
+            
+            Safely removes build artifacts, dependency folders, temporary files,
+            and other non-essential files from development repositories to
+            reclaim disk space.
+            
+            Args:
+                repos_path: Path to repositories directory
+                targets: List of patterns to clean (node_modules, __pycache__, etc.)
+                size_threshold_mb: Only clean if total savings exceeds this threshold
+                dry_run: Preview cleanup operations without executing
+                
+            Returns:
+                Cleanup summary with space saved and files removed
+            """
+            return self.health_checker.cleanup_development_artifacts(
+                repos_path, targets, size_threshold_mb, dry_run
+            )
+
+        @self.mcp.tool()
+        def find_duplicate_code(
+            repos_path: str,
+            file_types: Optional[List[str]] = None,
+            min_lines: int = 10,
+            similarity_threshold: float = 0.8,
+            report_path: Optional[str] = None
+        ) -> Dict[str, Any]:
+            """Find duplicate code across repositories.
+            
+            Scans multiple repositories to identify duplicate or similar code
+            blocks that could be refactored into shared libraries or modules.
+            
+            Args:
+                repos_path: Path to repositories directory
+                file_types: File extensions to analyze (*.py, *.js, etc.)
+                min_lines: Minimum lines for duplicate detection
+                similarity_threshold: Similarity threshold (0.0-1.0)
+                report_path: Optional path to save duplicate code report
+                
+            Returns:
+                Duplicate code analysis with locations and similarity scores
+            """
+            return self.duplicate_detector.find_duplicate_code(
+                repos_path, file_types, min_lines, similarity_threshold, report_path
+            )
+
+        @self.mcp.tool()
+        def compare_workspace_snapshots(
+            snapshot1_path: str,
+            snapshot2_path: str,
+            report_path: Optional[str] = None,
+            show_changes: Optional[List[str]] = None
+        ) -> Dict[str, Any]:
+            """Compare workspace snapshots to identify changes over time.
+            
+            Compares two workspace backup snapshots to show what repositories
+            have been added, removed, or modified, along with detailed change
+            analysis and size differences.
+            
+            Args:
+                snapshot1_path: Path to first snapshot (older)
+                snapshot2_path: Path to second snapshot (newer)
+                report_path: Optional path to save detailed comparison report
+                show_changes: Types of changes to include (new_repos, deleted_files, etc.)
+                
+            Returns:
+                Detailed comparison with changes, additions, deletions, and statistics
+            """
+            return self.duplicate_detector.compare_workspace_snapshots(
+                snapshot1_path, snapshot2_path, report_path, show_changes
+            )
+
+        @self.mcp.tool()
+        def selective_restore(
+            backup_path: str,
+            restore_items: List[str],
+            target_path: str,
+            preserve_structure: bool = True,
+            overwrite_existing: bool = False
+        ) -> Dict[str, Any]:
+            """Selectively restore specific projects or files from backup.
+            
+            Restores specific repositories, files, or patterns from backup
+            archives with flexible filtering and structure preservation options.
+            
+            Args:
+                backup_path: Path to backup location
+                restore_items: List of patterns to restore (project names, file patterns)
+                target_path: Destination path for restored items
+                preserve_structure: Maintain original directory structure
+                overwrite_existing: Overwrite existing files during restore
+                
+            Returns:
+                Restore summary with files restored and any conflicts
+            """
+            return self.duplicate_detector.selective_restore(
+                backup_path, restore_items, target_path,
+                preserve_structure, overwrite_existing
+            )
 
     def run(self) -> None:
         """Start the MCP server."""
