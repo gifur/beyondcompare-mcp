@@ -6,16 +6,20 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Security: Audited](https://img.shields.io/badge/security-audited-brightgreen.svg)](./BUILD_COMPLETE.md)
 
-A modern MCP server that provides file and directory comparison capabilities using Beyond Compare. Built with security, reliability, and performance in mind.
+A modern MCP server that provides comprehensive file comparison, multimedia management, and developer workspace tools using Beyond Compare. Features 13 powerful tools for everything from file comparison to repository backup and workspace analysis.
 
 ## ✨ Features
 
 - **🔍 File and Folder Comparison**: Compare files and directories with Beyond Compare's powerful engine
 - **⇄ Directory Synchronization**: Keep folders in sync with various sync modes (mirror, update, backup)
 - **📊 Diff Report Generation**: Generate detailed comparison reports in multiple formats
+- **🎵 Multimedia Management**: Complete drive scanning, duplicate detection, and USB drive monitoring
+- **👨‍💻 Developer Workspace Tools**: Smart repository backup, health scanning, and workspace analysis
+- **🧹 Intelligent Cleanup**: Automated artifact cleanup with node_modules filtering and space reclamation
+- **🔍 Code Analysis**: Duplicate code detection and workspace snapshot comparison
 - **🛡️ Security First**: Comprehensive input validation and secure subprocess execution  
-- **🚀 MCP Compliant**: Built on the Model Context Protocol standards
-- **📦 DXT Packaging**: Easy deployment with DXT packages for Claude Desktop
+- **🚀 MCP Compliant**: Built on the Model Context Protocol standards with 13 powerful tools
+- **📦 MCPB Packaging**: Easy deployment with MCPB packages for Claude Desktop (60.4 KB)
 - **🌐 Cross-Platform**: Works on Windows, macOS, and Linux
 
 ## ✅ Security & Quality
@@ -69,9 +73,11 @@ COMMAND_TIMEOUT=30
 
 ## 🛠️ Available Tools
 
-The MCP server provides these tools to AI models:
+The MCP server provides **13 powerful tools** for file comparison, multimedia management, and developer workflows:
 
-### 1. `compare_files`
+### 📁 **Core Comparison Tools**
+
+#### 1. `compare_files`
 Compare two files using Beyond Compare's engine
 ```json
 {
@@ -84,7 +90,7 @@ Compare two files using Beyond Compare's engine
 }
 ```
 
-### 2. `compare_folders`
+#### 2. `compare_folders`
 Compare two directories with optional subfolder inclusion
 ```json
 {
@@ -98,7 +104,7 @@ Compare two directories with optional subfolder inclusion
 }
 ```
 
-### 3. `sync_folders`
+#### 3. `sync_folders`
 Synchronize directories using Beyond Compare
 ```json
 {
@@ -116,6 +122,66 @@ Synchronize directories using Beyond Compare
 - `mirror`: Make target identical to source
 - `update`: Copy newer files from source to target
 - `backup`: Copy only missing files to target
+
+### 🎵 **Multimedia & Drive Tools**
+
+#### 4. `multimedia_drive_scanner`
+Scan multimedia drives (E:, F:, K:, L:) for complete inventory with filtering options
+
+#### 5. `find_multimedia_duplicates`
+Find duplicate multimedia files across drives using content hashing
+
+#### 6. `detect_usb_drives`
+Detect and list all connected USB drives with detailed information
+
+### 👨‍💻 **Developer Workspace Tools**
+
+#### 7. `backup_dev_repositories`
+Smart backup of development repositories with intelligent filtering
+- Excludes `node_modules`, `__pycache__`, build artifacts
+- Preserves Git essentials and project structure
+- Supports compression and incremental backups
+- Perfect for backing up `D:/dev/repos` with space optimization
+
+#### 8. `analyze_dev_workspace`
+Comprehensive analysis of development workspace
+- Language usage statistics and repository insights
+- Dependency analysis (package.json, requirements.txt, etc.)
+- Disk usage analysis and optimization opportunities
+- Generates detailed HTML reports
+
+#### 9. `scan_repo_health`
+Scan repository health and identify potential issues
+- Git status checks across all repositories
+- Large file detection and security issue identification
+- Outdated dependency scanning
+- Automated fix options for common issues
+
+#### 10. `cleanup_dev_artifacts`
+Clean up build artifacts and temporary files across repositories
+- Safely removes `node_modules`, `__pycache__`, `.next`, `dist/` folders
+- Configurable size thresholds and target patterns
+- Dry-run mode for safe preview
+- Significant disk space reclamation
+
+#### 11. `find_duplicate_code`
+Find duplicate code across repositories for refactoring opportunities
+- Cross-repository duplicate detection
+- Configurable similarity thresholds
+- Supports multiple file types (*.py, *.js, *.ts, etc.)
+- Detailed similarity reports
+
+#### 12. `compare_workspace_snapshots`
+Compare workspace snapshots to identify changes over time
+- Track repository additions, deletions, and modifications
+- Detailed change analysis with size differences
+- Perfect for monitoring workspace evolution
+
+#### 13. `selective_restore`
+Selectively restore specific projects or files from backup
+- Flexible pattern-based restoration
+- Structure preservation options
+- Conflict resolution and overwrite controls
 
 ## 🧪 Development & Testing
 

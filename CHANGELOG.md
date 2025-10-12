@@ -8,18 +8,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Initial project setup with FastMCP 2.10 compatibility
-- Core functionality for file and folder comparison
-- Folder synchronization with different modes (mirror, update, backup)
-- DXT packaging support
-- Comprehensive test suite
-- Documentation for MCP compliance and DXT packaging
-- GitHub Actions workflow for CI/CD
+- **🚀 MAJOR FEATURE:** 8 new developer workspace management tools
+- `backup_dev_repositories`: Smart repository backup with intelligent filtering (excludes node_modules, __pycache__, etc.)
+- `analyze_dev_workspace`: Comprehensive workspace analysis with language statistics and dependency tracking
+- `scan_repo_health`: Repository health scanning with automated issue detection and fixes
+- `cleanup_dev_artifacts`: Automated cleanup of build artifacts and temporary files across repositories
+- `find_duplicate_code`: Cross-repository duplicate code detection for refactoring opportunities
+- `compare_workspace_snapshots`: Compare workspace backups to track changes over time
+- `selective_restore`: Flexible restoration of specific projects or files from backups
+- **🎵 Multimedia Tools:** Enhanced multimedia drive scanning and duplicate detection
+- `multimedia_drive_scanner`: Complete drive inventory with filtering options
+- `find_multimedia_duplicates`: Content-based duplicate detection across drives
+- `detect_usb_drives`: USB drive detection and detailed information
+- **📦 MCPB Packaging:** Complete MCPB implementation replacing DXT packaging
+- Modular tool architecture with `src/beyondcompare_mcp/tools/developer/` structure
+- FastMCP 2.12 compliance with proper decorators and multiline docstrings
+- Comprehensive documentation updates (README, API docs, User Guide)
 
-### Fixed
-- Fixed mojibake and encoding issues in README.md
-- Standardized emoji usage across documentation
-- Ensured proper display of special characters and symbols
+### Changed
+- **BREAKING:** Package format changed from DXT to MCPB (60.4 KB self-contained package)
+- **ARCHITECTURE:** Refactored tools into modular structure for better maintainability
+- Enhanced README.md with comprehensive tool documentation (13 tools total)
+- Updated manifest.json with all 13 tools and proper metadata
+- Improved tool registration using modern FastMCP 2.12 standards
+
+### Technical
+- Total tools expanded from 5 to 13 (160% increase in functionality)
+- Perfect for D:/dev/repos backup and management workflows
+- Intelligent filtering prevents backing up node_modules, build artifacts, etc.
+- Space-efficient backups with compression and incremental support
+- Cross-repository analysis and health monitoring capabilities
 
 ## [0.1.1] - 2025-08-16
 
