@@ -4,17 +4,23 @@ import os
 from pathlib import Path
 from typing import Optional
 
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field, field_validator, ConfigDict
+
+# Load .env file if it exists
+env_path = Path(__file__).parent.parent.parent / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
+else:
+    # Also try loading from current directory
+    load_dotenv()
 
 
 class Settings(BaseModel):
     """Application settings with environment variable overrides."""
 
     model_config = ConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=True,
-        extra="forbid"
+        env_file=".env", env_file_encoding="utf-8", case_sensitive=True, extra="forbid"
     )
 
     # Server configuration
@@ -25,32 +31,26 @@ class Settings(BaseModel):
     # Beyond Compare configuration
     BEYOND_COMPARE_PATH: Optional[str] = Field(
         default=None,
-        description="Path to Beyond Compare executable (auto-detected if not specified)"
+        description="Path to Beyond Compare executable (auto-detected if not specified)",
     )
 
     BC_SCRIPTS_DIR: str = Field(
         default=str(Path.cwd() / "bc_scripts"),
-        description="Directory for Beyond Compare script files"
+        description="Directory for Beyond Compare script files",
     )
 
     # Timeouts in seconds
     COMMAND_TIMEOUT: int = Field(
-        default=300,
-        description="Timeout for Beyond Compare commands in seconds"
+        default=300, description="Timeout for Beyond Compare commands in seconds"
     )
-    API_TIMEOUT: int = Field(
-        default=30,
-        description="API request timeout in seconds"
-    )
+    API_TIMEOUT: int = Field(default=30, description="API request timeout in seconds")
 
     # Package information
     DXT_PACKAGE_NAME: str = Field(
-        default="beyondcompare-mcp",
-        description="Package name for DXT builds"
+        default="beyondcompare-mcp", description="Package name for DXT builds"
     )
     DXT_PACKAGE_VERSION: str = Field(
-        default="0.1.0",
-        description="Package version for DXT builds"
+        default="0.1.0", description="Package version for DXT builds"
     )
 
     @field_validator("LOG_LEVEL")
@@ -82,19 +82,15 @@ class Settings(BaseModel):
 
 
 def create_settings() -> Settings:
-    """Create settings instance with environment variable support."""
-    # Read environment variables with fallbacks
-    return Settings(
-        HOST=os.getenv("HOST", "127.0.0.1"),
-        PORT=int(os.getenv("PORT", "8000")),
-        LOG_LEVEL=os.getenv("LOG_LEVEL", "INFO"),
-        BEYOND_COMPARE_PATH=os.getenv("BEYOND_COMPARE_PATH", None),
-        BC_SCRIPTS_DIR=os.getenv("BC_SCRIPTS_DIR", str(Path.cwd() / "bc_scripts")),
-        COMMAND_TIMEOUT=int(os.getenv("COMMAND_TIMEOUT", "300")),
-        API_TIMEOUT=int(os.getenv("API_TIMEOUT", "30")),
-        DXT_PACKAGE_NAME=os.getenv("DXT_PACKAGE_NAME", "beyondcompare-mcp"),
-        DXT_PACKAGE_VERSION=os.getenv("DXT_PACKAGE_VERSION", "0.1.0"),
-    )
+    """Create settings instance with environment variable support.
+
+    Pydantic will automatically load from .env file via model_config,
+    but we also load it explicitly here to ensure os.getenv() works
+    if Settings() is instantiated with explicit parameters.
+    """
+    # Let Pydantic load from .env automatically via model_config
+    # This works because Settings has env_file=".env" in model_config
+    return Settings()
 
 
 # Global settings instance

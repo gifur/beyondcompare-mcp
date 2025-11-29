@@ -353,53 +353,115 @@ class MultimediaDriveScanner:
         """
         usb_drives = []
         
+        # System/NVMe drives to exclude (C:, D:, N: are NVMe/system drives)
+        SYSTEM_DRIVES = ['C:', 'D:', 'N:']
+        
         if platform.system() == "Windows":
             try:
                 import win32api
+                import win32file
                 drives = win32api.GetLogicalDriveStrings()
                 drives = drives.split('\000')[:-1]  # Remove empty string at end
+                
+                # Track physical drives to group partitions
+                physical_drives = {}  # physical_drive_id -> list of drive letters
                 
                 for drive in drives:
                     drive_letter = drive.rstrip('\\')
                     
-                    # Skip the multimedia drives (assume they're fixed)
-                    if drive_letter.upper() in [d.upper() for d in self.MULTIMEDIA_DRIVES]:
+                    # Skip system/NVMe drives (C:, D:, N:)
+                    if drive_letter.upper() in [d.upper() for d in SYSTEM_DRIVES]:
                         continue
                     
                     try:
-                        drive_type = win32api.GetDriveType(drive)
+                        drive_type = win32file.GetDriveType(drive)
                         # Type 2 = Removable drive (USB, floppy, etc.)
-                        if drive_type == 2:
+                        # Type 3 = Fixed drive (but may be external USB drives that Windows treats as fixed)
+                        # Include both removable and fixed drives (E:, F:, K:, L: are on a 15TB USB drive)
+                        if drive_type in [2, 3]:
                             space_info = self._get_drive_space(drive_letter)
-                            usb_drives.append({
-                                "drive_letter": drive_letter,
-                                "label": self._get_drive_label(drive_letter),
-                                "space_info": space_info,
-                                "multimedia_folder_exists": (Path(drive_letter) / self.MULTIMEDIA_FOLDER).exists()
-                            })
+                            # Only include if it's actually a valid drive with space
+                            if space_info.get("total_gb", 0) > 0:
+                                # Try to get physical drive number to group partitions
+                                physical_drive_id = self._get_physical_drive_id(drive_letter)
+                                
+                                drive_info = {
+                                    "drive_letter": drive_letter,
+                                    "label": self._get_drive_label(drive_letter),
+                                    "space_info": space_info,
+                                    "multimedia_folder_exists": (Path(drive_letter) / self.MULTIMEDIA_FOLDER).exists(),
+                                    "drive_type": "removable" if drive_type == 2 else "fixed",
+                                    "detection_method": "win32api"
+                                }
+                                
+                                # Group by physical drive if we can detect it
+                                if physical_drive_id:
+                                    if physical_drive_id not in physical_drives:
+                                        physical_drives[physical_drive_id] = []
+                                    physical_drives[physical_drive_id].append(drive_info)
+                                    drive_info["physical_drive_id"] = physical_drive_id
+                                else:
+                                    usb_drives.append(drive_info)
+                                    
                     except Exception as e:
                         logger.warning(f"Could not get info for drive {drive_letter}: {e}")
+                
+                # Add grouped drives (if multiple partitions on same physical drive, add as one entry)
+                for physical_id, partitions in physical_drives.items():
+                    if len(partitions) > 1:
+                        # Multiple partitions on same physical drive - create grouped entry
+                        total_size = sum(p["space_info"].get("total_gb", 0) for p in partitions)
+                        total_free = sum(p["space_info"].get("free_gb", 0) for p in partitions)
+                        total_used = sum(p["space_info"].get("used_gb", 0) for p in partitions)
+                        
+                        # Use the first partition's label or create a combined label
+                        primary_label = partitions[0]["label"]
+                        if primary_label == "Unlabeled":
+                            primary_label = f"USB Drive ({', '.join(p['drive_letter'] for p in partitions)})"
+                        
+                        usb_drives.append({
+                            "drive_letter": f"{partitions[0]['drive_letter']} (+{len(partitions)-1} partitions)",
+                            "label": primary_label,
+                            "space_info": {
+                                "total_gb": round(total_size, 2),
+                                "used_gb": round(total_used, 2),
+                                "free_gb": round(total_free, 2),
+                                "used_percent": round((total_used / total_size * 100) if total_size > 0 else 0, 1)
+                            },
+                            "multimedia_folder_exists": any(p["multimedia_folder_exists"] for p in partitions),
+                            "drive_type": partitions[0]["drive_type"],
+                            "detection_method": "win32api",
+                            "physical_drive_id": physical_id,
+                            "partitions": [p["drive_letter"] for p in partitions],
+                            "partition_details": partitions
+                        })
+                    else:
+                        # Single partition, add directly
+                        usb_drives.append(partitions[0])
                         
             except ImportError:
                 logger.warning("win32api not available - using fallback USB detection")
-                # Fallback: try common USB drive letters
-                for letter in 'GHIJMNOPQRSTUVWXYZ':
+                # Fallback: try common USB drive letters (exclude system drives C:, D:, N:)
+                SYSTEM_DRIVES = ['C:', 'D:', 'N:']
+                for letter in 'EFGHIJKLMNOPQRSTUVWXYZ':
                     drive_letter = f"{letter}:"
-                    if drive_letter.upper() not in [d.upper() for d in self.MULTIMEDIA_DRIVES]:
-                        drive_path = Path(drive_letter)
-                        try:
-                            if drive_path.exists() and drive_path.is_dir():
-                                space_info = self._get_drive_space(drive_letter)
-                                if space_info.get("total_gb", 0) > 0:  # Valid drive
-                                    usb_drives.append({
-                                        "drive_letter": drive_letter,
-                                        "label": "Unknown (win32api not available)",
-                                        "space_info": space_info,
-                                        "multimedia_folder_exists": (Path(drive_letter) / self.MULTIMEDIA_FOLDER).exists(),
-                                        "detection_method": "fallback"
-                                    })
-                        except Exception:
-                            continue
+                    # Skip system/NVMe drives
+                    if drive_letter.upper() in [d.upper() for d in SYSTEM_DRIVES]:
+                        continue
+                    drive_path = Path(drive_letter)
+                    try:
+                        if drive_path.exists() and drive_path.is_dir():
+                            space_info = self._get_drive_space(drive_letter)
+                            if space_info.get("total_gb", 0) > 0:  # Valid drive
+                                usb_drives.append({
+                                    "drive_letter": drive_letter,
+                                    "label": "Unknown (win32api not available)",
+                                    "space_info": space_info,
+                                    "multimedia_folder_exists": (Path(drive_letter) / self.MULTIMEDIA_FOLDER).exists(),
+                                    "detection_method": "fallback"
+                                })
+                    except Exception:
+                        continue
         
         return usb_drives
     
@@ -430,6 +492,59 @@ class MultimediaDriveScanner:
             
         return {"error": "Could not retrieve drive space information"}
     
+    def _get_physical_drive_id(self, drive_letter: str) -> Optional[str]:
+        """Get physical drive ID to identify if multiple partitions are on same drive.
+        
+        Args:
+            drive_letter: Drive letter (e.g., 'E:')
+            
+        Returns:
+            Physical drive identifier string or None if cannot be determined
+        """
+        try:
+            if platform.system() == "Windows":
+                import win32api
+                import win32file
+                
+                # Get volume GUID path
+                volume_path = f"\\\\.\\{drive_letter}"
+                try:
+                    # Try to get volume information
+                    volume_info = win32api.GetVolumeInformation(drive_letter + "\\")
+                    volume_serial = volume_info[1]  # Serial number
+                    
+                    # Use volume serial as physical drive identifier
+                    # Drives on same physical device often share characteristics
+                    # This is a heuristic - not perfect but better than nothing
+                    if volume_serial:
+                        return f"vol_{volume_serial}"
+                except Exception:
+                    pass
+                    
+                # Alternative: Try to get disk number using WMI (more accurate but requires WMI)
+                try:
+                    import wmi
+                    c = wmi.WMI()
+                    for disk in c.Win32_LogicalDisk():
+                        if disk.DeviceID == drive_letter:
+                            # Get the physical disk this partition belongs to
+                            for partition in c.Win32_LogicalDiskToPartition():
+                                if partition.Dependent == disk.DeviceID:
+                                    for disk_drive in c.Win32_DiskDriveToDiskPartition():
+                                        if disk_drive.Dependent == partition.Antecedent:
+                                            # Extract disk number from Antecedent
+                                            disk_id = disk_drive.Antecedent.split('=')[1].strip('"')
+                                            return f"disk_{disk_id}"
+                except ImportError:
+                    # WMI not available, skip
+                    pass
+                except Exception:
+                    # WMI call failed, skip
+                    pass
+        except Exception:
+            pass
+        return None
+
     def _get_drive_label(self, drive: str) -> str:
         """Get drive volume label."""
         try:
@@ -437,8 +552,8 @@ class MultimediaDriveScanner:
                 try:
                     import win32api
                     return win32api.GetVolumeInformation(drive + "\\")[0] or "Unlabeled"
-                except ImportError:
-                    # Fallback without win32api
+                except (ImportError, Exception):
+                    # Fallback without win32api or if call fails
                     return "Unknown Label"
         except Exception:
             pass
