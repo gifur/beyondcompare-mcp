@@ -8,30 +8,50 @@
 
 A modern MCP server that provides comprehensive file comparison, multimedia management, and developer workspace tools using Beyond Compare. Features 13 powerful tools for everything from file comparison to repository backup and workspace analysis.
 
-## ✨ Features
+##  Features
 
-- **🔍 File and Folder Comparison**: Compare files and directories with Beyond Compare's powerful engine
-- **⇄ Directory Synchronization**: Keep folders in sync with various sync modes (mirror, update, backup)
-- **📊 Diff Report Generation**: Generate detailed comparison reports in multiple formats
-- **🎵 Multimedia Management**: Complete drive scanning, duplicate detection, and USB drive monitoring
-- **👨‍💻 Developer Workspace Tools**: Smart repository backup, health scanning, and workspace analysis
-- **🧹 Intelligent Cleanup**: Automated artifact cleanup with node_modules filtering and space reclamation
-- **🔍 Code Analysis**: Duplicate code detection and workspace snapshot comparison
-- **🛡️ Security First**: Comprehensive input validation and secure subprocess execution  
-- **🚀 MCP Compliant**: Built on the Model Context Protocol standards with 13 powerful tools
-- **📦 MCPB Packaging**: Easy deployment with MCPB packages for Claude Desktop (60.4 KB)
-- **🌐 Cross-Platform**: Works on Windows, macOS, and Linux
+- ** File and Folder Comparison**: Compare files and directories with Beyond Compare's powerful engine
+- ** Directory Synchronization**: Keep folders in sync with various sync modes (mirror, update, backup)
+- ** Diff Report Generation**: Generate detailed comparison reports in multiple formats
+- ** Multimedia Management**: Complete drive scanning, duplicate detection, and USB drive monitoring
+- ** Developer Workspace Tools**: Smart repository backup, health scanning, and workspace analysis
+- ** Intelligent Cleanup**: Automated artifact cleanup with node_modules filtering and space reclamation
+- ** Code Analysis**: Duplicate code detection and workspace snapshot comparison
+- ** Security First**: Comprehensive input validation and secure subprocess execution  
+- ** MCP Compliant**: Built on the Model Context Protocol standards with 13 powerful tools
+- ** MCPB Packaging**: Easy deployment with MCPB packages for Claude Desktop (60.4 KB)
+- ** Cross-Platform**: Works on Windows, macOS, and Linux
 
-## ✅ Security & Quality
+##  Security & Quality
 
-✅ **Production Ready** - Comprehensive security audit passed  
-✅ **Input Validation** - Command injection and path traversal protection  
-✅ **Secure Dependencies** - Official MCP SDK 2.11+ with verified packages  
-✅ **Test Coverage** - 85%+ test coverage with security tests  
-✅ **Modern Architecture** - Python 3.10+ with type hints and async support
+ **Production Ready** - Comprehensive security audit passed  
+ **Input Validation** - Command injection and path traversal protection  
+ **Secure Dependencies** - Official MCP SDK 2.11+ with verified packages  
+ **Test Coverage** - 85%+ test coverage with security tests  
+ **Modern Architecture** - Python 3.10+ with type hints and async support
 
-## 🚀 Installation
+##  Installation
 
+### Prerequisites
+- [uv](https://docs.astral.sh/uv/) installed (RECOMMENDED)
+- Python 3.12+
+
+###  Quick Start
+Run immediately via `uvx`:
+```bash
+uvx beyondcompare-mcp
+```
+
+###  Claude Desktop Integration
+Add to your `claude_desktop_config.json`:
+```json
+"mcpServers": {
+  "beyondcompare-mcp": {
+    "command": "uv",
+    "args": ["--directory", "D:/Dev/repos/beyondcompare-mcp", "run", "beyondcompare-mcp"]
+  }
+}
+```
 ### Prerequisites
 
 - **Python 3.10+** (required for MCP 2.11+)
@@ -41,8 +61,8 @@ A modern MCP server that provides comprehensive file comparison, multimedia mana
 ### Quick Install (Recommended)
 
 **For Claude Desktop users:**
-1. Download the latest DXT package from `dist/beyondcompare-mcp-0.1.0.dxt` (3.09 MB)
-2. Drag the `.dxt` file to Claude Desktop or use Settings > MCP > Install Extension
+1. Download or build the latest `.mcpb` package.
+2. Drag the `.mcpb` file to Claude Desktop or use Settings > MCP > Install Extension
 3. Beyond Compare will be auto-detected (or configure path when prompted)
 
 ### Install from Source
@@ -53,7 +73,7 @@ cd beyondcompare-mcp
 pip install -e ".[dev]"
 ```
 
-## ⚙️ Configuration
+##  Configuration
 
 The MCP server auto-detects Beyond Compare installation (including Beyond Compare 5), but you can customize via environment variables:
 
@@ -71,11 +91,11 @@ BC_SCRIPTS_DIR="./bc_scripts"
 COMMAND_TIMEOUT=30
 ```
 
-## 🛠️ Available Tools
+##  Available Tools
 
 The MCP server provides **13 powerful tools** for file comparison, multimedia management, and developer workflows:
 
-### 📁 **Core Comparison Tools**
+###  **Core Comparison Tools**
 
 #### 1. `compare_files`
 Compare two files using Beyond Compare's engine
@@ -123,7 +143,7 @@ Synchronize directories using Beyond Compare
 - `update`: Copy newer files from source to target
 - `backup`: Copy only missing files to target
 
-### 🎵 **Multimedia & Drive Tools**
+###  **Multimedia & Drive Tools**
 
 #### 4. `multimedia_drive_scanner`
 Scan multimedia drives (E:, F:, K:, L:) for complete inventory with filtering options
@@ -134,14 +154,14 @@ Find duplicate multimedia files across drives using content hashing
 #### 6. `detect_usb_drives`
 Detect and list all connected USB drives with detailed information
 
-### 👨‍💻 **Developer Workspace Tools**
+###  **Developer Workspace Tools**
 
 #### 7. `backup_dev_repositories`
 Smart backup of development repositories with intelligent filtering
 - Excludes `node_modules`, `__pycache__`, build artifacts
 - Preserves Git essentials and project structure
 - Supports compression and incremental backups
-- Perfect for backing up `D:/dev/repos` with space optimization
+-  for backing up `D:/dev/repos` with space optimization
 
 #### 8. `analyze_dev_workspace`
 Comprehensive analysis of development workspace
@@ -175,7 +195,7 @@ Find duplicate code across repositories for refactoring opportunities
 Compare workspace snapshots to identify changes over time
 - Track repository additions, deletions, and modifications
 - Detailed change analysis with size differences
-- Perfect for monitoring workspace evolution
+-  for monitoring workspace evolution
 
 #### 13. `selective_restore`
 Selectively restore specific projects or files from backup
@@ -183,7 +203,7 @@ Selectively restore specific projects or files from backup
 - Structure preservation options
 - Conflict resolution and overwrite controls
 
-## 🧪 Development & Testing
+##  Development & Testing
 
 ```bash
 # Install development dependencies
@@ -200,21 +220,18 @@ isort src tests
 mypy src
 ```
 
-## ðŸ“¦ DXT Packaging
+##  Packaging & Distribution
 
-Build a complete DXT package for distribution:
+This repository is SOTA 2026 compliant and uses the officially validated `@anthropic-ai/mcpb` workflow for distribution.
 
+### Pack Extension
+To generate a `.mcpb` distribution bundle with complete source code and automated build exclusions:
 ```bash
-python dxt_build.py
+# SOTA 2026 standard pack command
+mcpb pack . dist/beyondcompare-mcp.mcpb
 ```
 
-The package (`dist/beyondcompare-mcp-0.1.0.dxt`) includes:
-- ✅ Complete MCP server with all dependencies (3.09 MB)
-- ✅ 773 files with MCP SDK 1.12.4 bundled
-- ✅ Secure launch scripts with proper validation
-- ✅ Cross-platform compatibility
-
-## 🔒 Security Features
+##  Security Features
 
 - **Input Validation**: All file paths and arguments validated against injection attacks
 - **Path Security**: Prevention of path traversal with `..` detection
@@ -222,7 +239,7 @@ The package (`dist/beyondcompare-mcp-0.1.0.dxt`) includes:
 - **Temp File Safety**: Secure temporary file handling with unique names
 - **Dependency Verification**: All dependencies verified and security-audited
 
-## 📋 System Requirements
+##  System Requirements
 
 | Component | Requirement |
 |-----------|------------|
@@ -232,18 +249,18 @@ The package (`dist/beyondcompare-mcp-0.1.0.dxt`) includes:
 | Disk Space | 10MB for DXT package |
 | OS | Windows 10+, macOS 10.15+, Linux (Ubuntu 20.04+) |
 
-## 🫶 Contributing
+##  Contributing
 
 Contributions welcome! Please see:
 - [Contributing Guidelines](CONTRIBUTING.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Security Policy](docs/SECURITY-ADVISORY.md)
 
-## 📜 License
+##  License
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
-## 🔗 Links
+##  Links
 
 - **Beyond Compare**: https://www.scootersoftware.com/
 - **Model Context Protocol**: https://modelcontextprotocol.io/
@@ -252,16 +269,28 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-**🎉 Ready for production use with verified functionality, comprehensive security, and full MCP compliance.**
+** Ready for production use with verified functionality, comprehensive security, and full MCP compliance.**
 
-## ✅ Verification Status
+##  Verification Status
 
-- **Package Installation**: ✅ DXT installs cleanly in Claude Desktop
-- **Server Functionality**: ✅ All core features verified working  
-- **Beyond Compare Integration**: ✅ Tested with Beyond Compare 5
-- **Security Features**: ✅ All security tests pass (14/14 unit tests)
-- **MCP Protocol**: ✅ Full MCP compliance verified (9/9 MCP tests)
-- **Test Coverage**: ✅ 61% realistic coverage (not inflated claims)
-- **Documentation**: ✅ All claims tested and verified
+- **Package Installation**:  DXT installs cleanly in Claude Desktop
+- **Server Functionality**:  All core features verified working  
+- **Beyond Compare Integration**:  Tested with Beyond Compare 5
+- **Security Features**:  All security tests pass (14/14 unit tests)
+- **MCP Protocol**:  Full MCP compliance verified (9/9 MCP tests)
+- **Test Coverage**:  61% realistic coverage (not inflated claims)
+- **Documentation**:  All claims tested and verified
 
 *This project prioritizes working functionality over marketing claims.*
+
+
+##  Webapp Dashboard
+
+This MCP server includes a free, premium web interface for monitoring and control.
+By default, the web dashboard runs on port **10840**.
+*(Assigned ports: **10840** (Web dashboard frontend), **10841** (Web dashboard backend (API)))*
+
+To start the webapp:
+1. Navigate to the `webapp` (or `web`, `frontend`) directory.
+2. Run `start.bat` (Windows) or `./start.ps1` (PowerShell).
+3. Open `http://localhost:10840` in your browser.

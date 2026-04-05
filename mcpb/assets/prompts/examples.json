@@ -1,0 +1,69 @@
+{
+  "examples": [
+    {
+      "description": "Compare two text files",
+      "commands": [
+        "compare_files('document_v1.txt', 'document_v2.txt')",
+        "get_comparison_details('session_001')",
+        "export_comparison('session_001', 'html')"
+      ],
+      "expected_result": "Detailed file comparison with HTML export"
+    },
+    {
+      "description": "Synchronize project folders",
+      "commands": [
+        "compare_folders('project_local', 'project_backup')",
+        "preview_sync('session_002', 'left_to_right')",
+        "execute_sync('session_002', 'left_to_right')"
+      ],
+      "expected_result": "Folders synchronized with conflict resolution"
+    },
+    {
+      "description": "Find duplicate files",
+      "commands": [
+        "scan_duplicates(['drive_c', 'drive_d'])",
+        "get_duplicate_report('scan_001')",
+        "remove_duplicates('scan_001', 'keep_newest')"
+      ],
+      "expected_result": "Duplicate files identified and cleaned up"
+    },
+    {
+      "description": "Scan USB drive contents",
+      "commands": [
+        "scan_media_drive('E:\\\\')",
+        "get_media_inventory('scan_002')",
+        "export_media_catalog('scan_002', 'json')"
+      ],
+      "expected_result": "Complete media inventory with JSON export"
+    }
+  ],
+  "workflows": {
+    "backup_comparison": [
+      "Compare source and backup folders",
+      "Identify changed files",
+      "Preview synchronization",
+      "Execute selective sync"
+    ],
+    "duplicate_cleanup": [
+      "Scan multiple drives for duplicates",
+      "Analyze duplicate reports",
+      "Apply cleanup rules",
+      "Verify space savings"
+    ],
+    "media_inventory": [
+      "Scan external media drives",
+      "Catalog file types and sizes",
+      "Generate inventory reports",
+      "Plan storage optimization"
+    ],
+    "version_control": [
+      "Compare different versions of files",
+      "Track change history",
+      "Merge conflicting changes",
+      "Maintain version integrity"
+    ]
+  }
+}
+
+
+

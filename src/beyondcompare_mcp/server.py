@@ -5,8 +5,107 @@ A Model Context Protocol (MCP) server that provides file and directory compariso
 capabilities using Beyond Compare. Built with modern MCP 2.11+ standards.
 """
 
-import logging
+# CRITICAL: Set stdio to binary mode on Windows for Antigravity IDE compatibility
+# MUST be done BEFORE any imports that might use stdout
+# Antigravity IDE is strict about JSON-RPC protocol and interprets trailing \r as "invalid trailing data"
+# Binary mode prevents Python from automatically converting line endings
+import sys
 import os
+import warnings
+
+if os.name == "nt":  # Windows
+    try:
+        import msvcrt
+
+        # Set stdin/stdout to binary mode to prevent line ending conversion
+        # This fixes "invalid trailing data" errors with Antigravity IDE
+        # Use try/except to handle cases where fileno() doesn't exist or isn't callable
+        try:
+            msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
+        except (OSError, AttributeError):
+            pass  # stdin might not be a real file descriptor or already patched
+        try:
+            msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
+        except (OSError, AttributeError):
+            pass  # stdout might not be a real file descriptor or already patched
+    except (ImportError, OSError, AttributeError):
+        pass  # If msvcrt is not available, continue anyway
+
+# Detect if we're running in stdio mode (MCP server)
+_is_stdio_mode = (
+    not sys.stdout.isatty()
+    or os.getenv("MCP_STDIO_MODE", "").lower() == "true"
+    or "stdio" in sys.argv
+    or __name__ == "__main__"
+)
+
+if _is_stdio_mode:
+    # CRITICAL: Patch stdout to prevent ANY writes during initialization
+    # This catches print statements, Rich console, FastMCP banners, etc.
+    if not hasattr(sys, "_original_stdout"):
+
+        class DevNullStdout:
+            """A file-like object that discards all writes (like /dev/null)."""
+
+            def write(self, s: str) -> int:
+                # Discard all writes to stdout - they would break JSON-RPC
+                return len(s)
+
+            def flush(self) -> None:
+                pass
+
+            def isatty(self) -> bool:
+                return False
+
+            def readable(self) -> bool:
+                return False
+
+            def writable(self) -> bool:
+                return True
+
+            def seekable(self) -> bool:
+                return False
+
+        # Store original stdout and replace with null device
+        # This will be restored before FastMCP.run()
+        sys._original_stdout = sys.stdout
+        sys.stdout = DevNullStdout()
+
+    # Suppress deprecation warnings
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+    # Configure Python's logging module to prevent stdout pollution
+    # FastMCP uses Python's logging module internally
+    import logging
+
+    logging.basicConfig(
+        level=logging.CRITICAL,  # Only show CRITICAL (suppress everything else)
+        format="%(message)s",
+        stream=sys.stderr,  # Send to stderr, not stdout
+        force=True,  # Override any existing configuration
+    )
+
+    # Suppress ALL loggers to prevent any output
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.CRITICAL)
+    root_logger.handlers = []
+
+    # Suppress FastMCP and other noisy loggers completely
+    for logger_name in [
+        "fastmcp",
+        "mcp",
+        "httpx",
+        "httpcore",
+        "h11",
+        "uvicorn",
+        "asyncio",
+    ]:
+        log = logging.getLogger(logger_name)
+        log.setLevel(logging.CRITICAL)
+        log.handlers = []
+        log.propagate = False
+else:
+    import logging
 import platform
 import shutil
 import subprocess
@@ -943,8 +1042,13 @@ class BeyondCompareMCP:
         ) -> Dict[str, Any]:
             """Smart backup of development repositories with intelligent filtering."""
             return self.dev_backup.backup_repositories(
-                source_path, backup_path, exclude_patterns,
-                include_git_essentials, compress, incremental, dry_run,
+                source_path,
+                backup_path,
+                exclude_patterns,
+                include_git_essentials,
+                compress,
+                incremental,
+                dry_run,
             )
 
         @self.mcp.tool()
@@ -957,8 +1061,11 @@ class BeyondCompareMCP:
         ) -> Dict[str, Any]:
             """Analyze development workspace for insights and optimization opportunities."""
             return self.workspace_analyzer.analyze_workspace(
-                workspace_path, report_path, include_git_stats,
-                include_dependencies, include_size_analysis,
+                workspace_path,
+                report_path,
+                include_git_stats,
+                include_dependencies,
+                include_size_analysis,
             )
 
         @self.mcp.tool()
@@ -1020,8 +1127,11 @@ class BeyondCompareMCP:
         ) -> Dict[str, Any]:
             """Selectively restore specific projects or files from backup."""
             return self.duplicate_detector.selective_restore(
-                backup_path, restore_items, target_path,
-                preserve_structure, overwrite_existing,
+                backup_path,
+                restore_items,
+                target_path,
+                preserve_structure,
+                overwrite_existing,
             )
 
     def _run_bc_command(
@@ -1425,22 +1535,82 @@ class BeyondCompareMCP:
 
     def run(self) -> None:
         """Start the MCP server."""
-        logger.info("Starting Beyond Compare MCP Server with FastMCP 2.11+")
-        if self.bc_path:
-            logger.info(f"Beyond Compare path: {self.bc_path}")
-        else:
-            logger.warning(
-                "Beyond Compare executable not found - server may not function properly"
-            )
+        # CRITICAL: Restore stdout before FastMCP.run() - FastMCP needs it for JSON-RPC communication
+        # But ensure it's completely clean and in binary mode for Antigravity IDE compatibility
+        if _is_stdio_mode and hasattr(sys, "_original_stdout"):
+            # Restore original stdout
+            sys.stdout = sys._original_stdout
 
-        self.mcp.run()
+            # CRITICAL: Set binary mode AFTER restoration for Antigravity IDE compatibility
+            # This must happen after restoration but before FastMCP starts
+            if os.name == "nt":  # Windows
+                try:
+                    import msvcrt
+
+                    # Set stdout to binary mode to prevent line ending conversion
+                    # This fixes "invalid trailing data" errors with Antigravity IDE
+                    msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
+                except (ImportError, OSError, AttributeError):
+                    pass  # If binary mode can't be set, continue anyway
+
+            # Ensure stdout is clean and unbuffered for JSON-RPC
+            sys.stdout.flush()
+            # Set unbuffered mode to prevent any buffering issues
+            os.environ.setdefault("PYTHONUNBUFFERED", "1")
+
+            # CRITICAL: Configure logging to NEVER write to stdout
+            # This prevents any accidental stdout writes during server operation
+            logging.basicConfig(
+                level=logging.CRITICAL,
+                format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                handlers=[logging.StreamHandler(sys.stderr)],  # Use stderr, not stdout
+                force=True,
+            )
+        else:
+            # Not in stdio mode, use normal logging
+            logger.info("Starting Beyond Compare MCP Server with FastMCP 2.11+")
+            if self.bc_path:
+                logger.info(f"Beyond Compare path: {self.bc_path}")
+            else:
+                logger.warning(
+                    "Beyond Compare executable not found - server may not function properly"
+                )
+
+        self.mcp.run(show_banner=False)
 
 
 def main() -> None:
-    """Main entry point for the MCP server."""
-    logging.basicConfig(level=logging.INFO)
+    """Main entry point with unified transport handling (FastMCP 2.14.4+)."""
+    from .transport import run_server
+
+    # Logging is already configured in stdio mode at module level
+    # Only configure if not in stdio mode
+    if not _is_stdio_mode:
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            handlers=[logging.StreamHandler(sys.stderr)],  # Use stderr, not stdout
+        )
+
     server = BeyondCompareMCP()
-    server.run()
+
+    # Use unified transport module
+    run_server(server.mcp, server_name="beyondcompare-mcp")
+
+
+# ASGI app for uvicorn / web_sota (e.g. uvicorn beyondcompare_mcp.server:app)
+_server_for_http: Optional[BeyondCompareMCP] = None
+
+
+def _get_http_app():
+    """Return FastMCP ASGI app for HTTP/uvicorn. Lazy init to avoid BC init in stdio mode."""
+    global _server_for_http
+    if _server_for_http is None:
+        _server_for_http = BeyondCompareMCP()
+    return _server_for_http.mcp.http_app()
+
+
+app = _get_http_app()
 
 
 if __name__ == "__main__":

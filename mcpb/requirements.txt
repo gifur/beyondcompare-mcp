@@ -2,7 +2,7 @@
 
 # Core MCP dependencies - actual working versions
 mcp>=1.12.4
-fastmcp>=2.11.3
+fastmcp>=3.1.0,<4
 
 # Core Python dependencies
 python-dotenv>=1.0.0

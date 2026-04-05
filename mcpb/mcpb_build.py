@@ -2,189 +2,75 @@
 """
 MCPB packaging script for Beyond Compare MCP Server.
 
-This script creates a complete MCPB package including all Python dependencies
-for the Beyond Compare MCP server following the official MCPB building guide.
+This script creates a minimal MCPB package with NO dependencies.
+IMPORTANT: MCPB packages contain NO dependencies - handled by MCPB runtime.
 """
 
 import json
-import os
-import shutil
-import subprocess
-import sys
-import tempfile
+import zipfile
 from pathlib import Path
-from typing import Dict, List, Optional
-
-# Project configuration
-PROJECT_ROOT = Path(__file__).parent.parent
-SRC_DIR = PROJECT_ROOT / "src"
-MCPB_DIR = Path(__file__).parent
-DIST_DIR = PROJECT_ROOT / "dist"
-REQUIREMENTS_FILE = PROJECT_ROOT / "requirements.txt"
-
-# Package information
-PACKAGE_NAME = "beyondcompare-mcp"
-PACKAGE_VERSION = "0.1.0"
 
 
-class MCPBBuilder:
-    """MCPB package builder with dependency bundling."""
+def create_mcpb_package():
+    """Create a minimal MCPB package - NO dependencies included."""
+    project_root = Path(__file__).parent.parent
+    mcpb_dir = project_root / "mcpb"
+    dist_dir = project_root / "dist"
 
-    def __init__(self):
-        self.temp_dir: Optional[Path] = None
-        self.build_dir: Optional[Path] = None
+    # Ensure dist directory exists
+    dist_dir.mkdir(parents=True, exist_ok=True)
 
-    def __enter__(self):
-        """Set up temporary directories."""
-        self.temp_dir = Path(tempfile.mkdtemp(prefix="mcpb_build_"))
-        self.build_dir = self.temp_dir / "build"
+    # Read manifest
+    manifest_path = mcpb_dir / "manifest.json"
+    if not manifest_path.exists():
+        print("[ERROR] MCPB manifest not found")
+        return False
 
-        # Create build directories
-        self.build_dir.mkdir(parents=True)
+    with open(manifest_path, 'r', encoding='utf-8') as f:
+        manifest = json.load(f)
 
-        print(f"Build directory: {self.build_dir}")
-        return self
+    package_name = manifest.get('name', 'beyondcompare-mcp')
+    version = manifest.get('version', '0.1.0')
+    output_file = dist_dir / f"{package_name}-{version}.mcpb"
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Clean up temporary directories."""
-        if self.temp_dir and self.temp_dir.exists():
-            shutil.rmtree(self.temp_dir, ignore_errors=True)
+    # Create minimal MCPB package
+    with zipfile.ZipFile(output_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        # Write the manifest
+        zipf.writestr("manifest.json", json.dumps(manifest, indent=2))
 
-    def clean_dist(self):
-        """Clean the dist directory."""
-        print("Cleaning dist directory...")
-        if DIST_DIR.exists():
-            # Only remove MCPB files
-            for file in DIST_DIR.glob("*.mcpb"):
-                file.unlink()
+        # Add the main server file ONLY (NO dependencies!)
+        server_path = project_root / "src" / "beyondcompare_mcp" / "server.py"
+        if server_path.exists():
+            zipf.write(str(server_path), "src/beyondcompare_mcp/server.py")
         else:
-            DIST_DIR.mkdir(parents=True, exist_ok=True)
+            print("[WARNING] Main server file not found")
 
-    def validate_source(self):
-        """Validate source code structure."""
-        print("Validating source structure...")
+    print("[SUCCESS] MCPB package created successfully!")
+    print(f"Package: {output_file}")
+    print(f"[WARNING] IMPORTANT: This MCPB package contains NO dependencies!")
+    print(f"   The MCPB runtime handles all Python package dependencies.")
 
-        # Check required files
-        required_files = [
-            SRC_DIR / "beyondcompare_mcp" / "__init__.py",
-            SRC_DIR / "beyondcompare_mcp" / "__main__.py",
-            SRC_DIR / "beyondcompare_mcp" / "server.py",
-            SRC_DIR / "beyondcompare_mcp" / "cli.py",
-            SRC_DIR / "beyondcompare_mcp" / "config.py",
-            SRC_DIR / "beyondcompare_mcp" / "exceptions.py",
-            MCPB_DIR / "manifest.json",
-            MCPB_DIR / "mcpb.json",
-        ]
+    # List contents
+    print("\nPackage contents:")
+    with zipfile.ZipFile(output_file, 'r') as zipf:
+        for file in zipf.namelist():
+            print(f"- {file}")
 
-        for file_path in required_files:
-            if not file_path.exists():
-                raise FileNotFoundError(f"Required file missing: {file_path}")
-
-        print("Source validation passed")
-
-    def check_mcpb_cli(self):
-        """Check if MCPB CLI is available."""
-        print("Checking MCPB CLI...")
-        try:
-            result = subprocess.run(["mcpb", "--version"], capture_output=True, text=True)
-            if result.returncode == 0:
-                print(f"MCPB CLI found: {result.stdout.strip()}")
-            else:
-                raise RuntimeError("MCPB CLI not working")
-        except FileNotFoundError:
-            raise RuntimeError("MCPB CLI not found. Install with: npm install -g @anthropic-ai/mcpb")
-
-    def validate_manifest(self):
-        """Validate the MCPB manifest."""
-        print("Validating MCPB manifest...")
-        
-        # Change to MCPB directory and validate
-        original_cwd = os.getcwd()
-        try:
-            os.chdir(MCPB_DIR)
-            result = subprocess.run(["mcpb", "validate", "manifest.json"], capture_output=True, text=True)
-            if result.returncode == 0:
-                print("Manifest validation passed")
-            else:
-                print(f"Manifest validation failed:")
-                print(f"STDOUT: {result.stdout}")
-                print(f"STDERR: {result.stderr}")
-                raise RuntimeError("Manifest validation failed")
-        finally:
-            os.chdir(original_cwd)
-
-    def build_package(self) -> Path:
-        """Build the MCPB package using MCPB CLI."""
-        print("Building MCPB package...")
-
-        mcpb_filename = f"{PACKAGE_NAME}.mcpb"
-        mcpb_path = DIST_DIR / mcpb_filename
-
-        # Change to MCPB directory and build
-        original_cwd = os.getcwd()
-        try:
-            os.chdir(MCPB_DIR)
-            result = subprocess.run(
-                ["mcpb", "pack", ".", str(mcpb_path)], 
-                capture_output=True, 
-                text=True
-            )
-            if result.returncode == 0:
-                print(f"MCPB package created: {mcpb_path}")
-                if mcpb_path.exists():
-                    size_mb = mcpb_path.stat().st_size / 1024 / 1024
-                    print(f"Package size: {size_mb:.2f} MB")
-                    return mcpb_path
-                else:
-                    raise RuntimeError("Package file not found after build")
-            else:
-                print(f"MCPB build failed:")
-                print(f"STDOUT: {result.stdout}")
-                print(f"STDERR: {result.stderr}")
-                raise RuntimeError("MCPB build failed")
-        finally:
-            os.chdir(original_cwd)
-
-    def build(self) -> Path:
-        """Execute the complete build process."""
-        print("Starting MCPB build process...")
-        print("=" * 50)
-
-        self.clean_dist()
-        self.validate_source()
-        self.check_mcpb_cli()
-        self.validate_manifest()
-        mcpb_path = self.build_package()
-
-        print("=" * 50)
-        print("Build completed successfully!")
-        print(f"MCPB package: {mcpb_path}")
-        return mcpb_path
+    return True
 
 
 def main():
     """Main entry point."""
-    try:
-        with MCPBBuilder() as builder:
-            mcpb_path = builder.build()
+    print("\n=== Building MCPB Package (NO dependencies) ===\n")
 
-            print("\nNext steps:")
-            print(f"1. Test the package by dragging {mcpb_path.name} to Claude Desktop")
-            print("2. Check Claude Desktop's MCP settings to verify installation")
-            print("3. Configure Beyond Compare path and settings")
-            print("4. Test the MCP tools in a Claude conversation")
+    success = create_mcpb_package()
 
-            return 0
-
-    except KeyboardInterrupt:
-        print("\nBuild cancelled by user")
-        return 1
-    except Exception as e:
-        print(f"\nBuild failed: {e}")
-        import traceback
-        traceback.print_exc()
-        return 1
+    if success:
+        print("\n[SUCCESS] MCPB package created!")
+    else:
+        print("\n[ERROR] Failed to create MCPB package")
+        exit(1)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
