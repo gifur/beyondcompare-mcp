@@ -46,6 +46,7 @@ dependencies = [
     # Logging and configuration
     "structlog>=23.0.0",
     "ruff>=0.14.6",
+    "prefab-ui>=0.14.0",
 ]
 
 [project.optional-dependencies]
