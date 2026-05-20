@@ -21,12 +21,16 @@
 2. See [API Documentation](#api-docs) - Tool reference
 3. Review [Security](#security) - Report issues
 
+### **Beyond Compare MCP — fleet gateway**
+1. [FLEET_GATEWAY.md](FLEET_GATEWAY.md) — ports **10840** / **10841**, REST routes, MCP `/mcp`, prompts, agentic tools, start commands (keep in sync with **MCP Central Docs** `projects/beyondcompare-mcp/README.md`).
+
 ---
 
 ## 📖 **Documentation Structure**
 
 ```
 docs/
+├── FLEET_GATEWAY.md           🛰️ Unified FastAPI + FastMCP gateway (fleet)
 ├── repository-protection/      🛡️ Git, GitHub, backup & AI workflow
 │   ├── README.md              → Protection strategy hub
 │   ├── BRANCH_PROTECTION_SETTINGS.md → GitHub setup (5 min)

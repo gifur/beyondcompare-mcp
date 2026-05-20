@@ -1,14 +1,27 @@
 # Beyond Compare MCP
 
-[![FastMCP Version](https://img.shields.io/badge/FastMCP-3.1.0-blue?style=flat-square&logo=python&logoColor=white)](https://github.com/sandraschi/fastmcp) [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) [![Linted with Biome](https://img.shields.io/badge/Linted_with-Biome-60a5fa?style=flat-square&logo=biome&logoColor=white)](https://biomejs.dev/) [![Built with Just](https://img.shields.io/badge/Built_with-Just-000000?style=flat-square&logo=gnu-bash&logoColor=white)](https://github.com/casey/just)
-
-[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
-[![MCP Version](https://img.shields.io/badge/MCP-2.11%2B-green.svg)](https://modelcontextprotocol.io/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Security: Audited](https://img.shields.io/badge/security-audited-brightgreen.svg)](./BUILD_COMPLETE.md)
+<p align="center">
+  <a href="https://github.com/casey/just"><img src="https://img.shields.io/badge/just-ready_to_go-7c5cfc?style=flat-square&logo=just&logoColor=white" alt="Just"></a>
+  <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
+  <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.13+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"></a>
+  <a href="https://github.com/PrefectHQ/fastmcp"><img src="https://img.shields.io/badge/FastMCP-3.2-7c5cfc?style=flat-square" alt="FastMCP"></a>
+</p>
 
 A modern MCP server that provides comprehensive file comparison, multimedia management, and developer workspace tools using Beyond Compare. Features 13 powerful tools for everything from file comparison to repository backup and workspace analysis.
+
+## Quick Start
+
+```powershell
+git clone https://github.com/sandraschi/beyondcompare-mcp
+cd beyondcompare-mcp
+just
+```
+
+This opens an interactive dashboard showing all available commands. Run `just bootstrap` to install dependencies, then `just serve` or `just dev` to start.
+
+### Manual Setup
+
+If you don't have `just` installed:
 
 ##  Features
 
@@ -297,13 +310,12 @@ MIT License - see [LICENSE](LICENSE) file for details.
 *This project prioritizes working functionality over marketing claims.*
 
 
-##  Webapp Dashboard
+## Webapp dashboard (`web_sota`)
 
-This MCP server includes a free, premium web interface for monitoring and control.
-By default, the web dashboard runs on port **10840**.
-*(Assigned ports: **10840** (Web dashboard frontend), **10841** (Web dashboard backend (API)))*
+Fleet ports: **10840** (Vite frontend), **10841** (unified **FastAPI + FastMCP** gateway: REST + MCP on `/mcp`).
 
-To start the webapp:
-1. Navigate to the `webapp` (or `web`, `frontend`) directory.
-2. Run `start.bat` (Windows) or `./start.ps1` (PowerShell).
-3. Open `http://localhost:10840` in your browser.
+1. Start the gateway: `uv run python -m beyondcompare_mcp.server --http --port 10841`
+2. In another shell: `cd web_sota` then `npm run dev`
+3. Open `http://127.0.0.1:10840` (Vite proxies `/api` and `/mcp` to the gateway).
+
+Operator reference: [docs/FLEET_GATEWAY.md](docs/FLEET_GATEWAY.md). Health probe for automation: `GET http://127.0.0.1:10841/api/v1/health`.

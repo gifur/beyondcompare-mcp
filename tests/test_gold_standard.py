@@ -6,6 +6,12 @@ These tests use direct method calls to test the core functionality
 without complex MCP tool registration testing.
 """
 
+import pytest
+
+pytestmark = pytest.mark.skip(
+    reason="Legacy suite (pre-unified-gateway); see tests/test_gateway.py for current coverage."
+)
+
 import os
 import tempfile
 import unittest

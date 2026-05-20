@@ -42,6 +42,15 @@ export BEYOND_COMPARE_PATH="/path/to/your/BCompare.exe"
 
 ---
 
+## Fleet HTTP gateway and dashboard
+
+The **unified gateway** (FastAPI + FastMCP 3.2) exposes REST diagnostics and MCP on one port. The **Vite** UI in `web_sota` proxies API calls to that gateway.
+
+- **Canonical doc:** [FLEET_GATEWAY.md](FLEET_GATEWAY.md) (ports **10840** / **10841**, `GET /api/v1/health`, capabilities, logs, LLM/Ollama helpers).
+- **MCP Central Docs** holds a fleet-facing summary: `mcp-central-docs/projects/beyondcompare-mcp/README.md` — update both when contracts change.
+
+---
+
 ## 🛠️ Tool Examples
 
 ### File Comparison

@@ -8,7 +8,9 @@ import {
     ChevronLeft,
     ChevronRight,
     Activity,
-    Wrench
+    Wrench,
+    ListOrdered,
+    Zap,
 } from 'lucide-react';
 interface SidebarProps {
     collapsed: boolean;
@@ -20,6 +22,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
     const navItems = [
         { href: '/', label: 'Overview', icon: LayoutDashboard },
+        { href: '/actions', label: 'Actions', icon: Zap },
+        { href: '/logs', label: 'Logs', icon: ListOrdered },
         { href: '/compare', label: 'Compare', icon: Activity },
         { href: '/sync', label: 'Sync', icon: RefreshCw },
         { href: '/chat', label: 'AI Command', icon: MessageSquare },

@@ -27,7 +27,6 @@ import logging
 import sys
 from typing import Optional, List
 
-from .server import BeyondCompareMCP
 from .config import settings
 
 
@@ -112,71 +111,54 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
 
 
 def main(args: Optional[List[str]] = None) -> int:
-    """Run the Beyond Compare MCP server from the command line."""
-    parsed_args = parse_args(args)
-
-    if parsed_args.version:
+    """Run the Beyond Compare MCP server from the command line (fleet transport + gateway)."""
+    argv = list(args) if args is not None else sys.argv[1:]
+    if "--version" in argv or "-V" in argv:
         from . import __version__
-        logger = logging.getLogger(__name__)
-        logger.info(f"Beyond Compare MCP Server v{__version__}")
+
+        print(f"Beyond Compare MCP Server v{__version__}")
         return 0
 
-    # Configure logging
-    setup_logging(parsed_args.log_level)
+    pre = argparse.ArgumentParser(add_help=False)
+    pre.add_argument(
+        "--log-level",
+        type=str,
+        default=settings.LOG_LEVEL,
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+    )
+    pre.add_argument("--bc-path", type=str, default=None)
+    pre.add_argument("--scripts-dir", type=str, default=None)
+    known, rest = pre.parse_known_args(argv)
+    setup_logging(known.log_level)
     logger = logging.getLogger(__name__)
 
+    if known.bc_path:
+        os.environ["BEYOND_COMPARE_PATH"] = known.bc_path
+    if known.scripts_dir:
+        os.environ["BC_SCRIPTS_DIR"] = known.scripts_dir
+
     try:
-        # CRITICAL: Ensure binary mode is set before creating server for Antigravity IDE compatibility
-        # This prevents "invalid trailing data" errors caused by Windows line ending conversion
-        if os.name == 'nt':  # Windows
+        if os.name == "nt":
             try:
                 import msvcrt
-                # Set stdout to binary mode if not already set (may have been set at module level)
+
                 try:
                     msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
                 except (OSError, AttributeError):
-                    pass  # stdout might not be a real file descriptor or already in binary mode
+                    pass
             except (ImportError, OSError, AttributeError):
-                pass  # If msvcrt is not available, continue anyway
+                pass
 
-        # Detect if we're in stdio mode
-        is_stdio_mode = (
-            not sys.stdout.isatty() 
-            or os.getenv("MCP_STDIO_MODE", "").lower() == "true"
-            or "stdio" in sys.argv
-        )
+        sys.argv = [sys.argv[0]] + rest
+        from .server import run_gateway_main
 
-        # Create and start the MCP server
-        server = BeyondCompareMCP(
-            bc_path=parsed_args.bc_path,
-            scripts_dir=parsed_args.scripts_dir,
-        )
-
-        # CRITICAL: Only log if NOT in stdio mode
-        # In stdio mode, ANY logging can cause "invalid trailing data" errors
-        if not is_stdio_mode:
-            logger.info("Starting Beyond Compare MCP Server")
-            if server.bc_path:
-                logger.info(f"Beyond Compare path: {server.bc_path}")
-            else:
-                logger.warning("Beyond Compare executable not found - server may not function properly")
-
-        server.run()
+        run_gateway_main()
         return 0
-
     except KeyboardInterrupt:
-        # Only log if not in stdio mode
-        is_stdio_mode = (
-            not sys.stdout.isatty() 
-            or os.getenv("MCP_STDIO_MODE", "").lower() == "true"
-            or "stdio" in sys.argv
-        )
-        if not is_stdio_mode:
-            logger.info("Shutting down Beyond Compare MCP Server...")
+        logger.info("Shutting down Beyond Compare MCP Server...")
         return 0
     except Exception as e:
-        # Critical errors should always be logged (to stderr)
-        logger.critical(f"Fatal error: {e}", exc_info=True)
+        logger.critical("Fatal error: %s", e, exc_info=True)
         return 1
 
 

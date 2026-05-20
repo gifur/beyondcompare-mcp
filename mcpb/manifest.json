@@ -113,8 +113,16 @@
     {
       "name": "selective_restore",
       "description": "Selectively restore specific projects or files from backup with flexible filtering"
+    },
+    {
+      "name": "beyondcompare_agentic_workflow",
+      "description": "SEP-1577 agentic workflow using sampling over BC status, compare, and repo health tools"
+    },
+    {
+      "name": "beyondcompare_sampling_hint",
+      "description": "Explains sampling requirements and fallback to atomic MCP tools"
     }
   ],
   "tools_generated": true,
-  "prompts_generated": false
+  "prompts_generated": true
 }

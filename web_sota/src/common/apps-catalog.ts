@@ -1,13 +1,12 @@
 import {
-    Github,
     Bot,
     Brain,
     LayoutGrid,
     Scan,
     MonitorPlay,
-    Box,
     Activity,
-    Archive
+    Archive,
+    Files,
 } from 'lucide-react';
 
 export interface AppEntry {
@@ -84,5 +83,14 @@ export const APPS_CATALOG: AppEntry[] = [
         url: 'http://localhost:10763',
         port: 10763,
         tags: ['utility', 'files']
-    }
+    },
+    {
+        id: 'beyondcompare-mcp',
+        label: 'Beyond Compare MCP',
+        description: 'Diff, sync, multimedia scan, and repo health via MCP + REST gateway',
+        icon: Files,
+        url: 'http://localhost:10840',
+        port: 10840,
+        tags: ['mcp', 'files', 'fleet'],
+    },
 ];

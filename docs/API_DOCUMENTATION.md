@@ -2,7 +2,18 @@
 
 ## Overview
 
-The Beyond Compare MCP Server provides 6 powerful tools for file and directory comparison, synchronization, and multimedia management. All tools are accessible through the Model Context Protocol (MCP) interface.
+The Beyond Compare MCP Server exposes **13** core MCP tools for comparison, synchronization, multimedia, and developer-workspace workflows, plus **agentic** helpers. Tools are available over **MCP** (stdio or HTTP streamable on the unified gateway).
+
+When the **unified gateway** is running (`python -m beyondcompare_mcp.server --http`), the same process also serves **REST** routes documented in **[FLEET_GATEWAY.md](FLEET_GATEWAY.md)** (`/api/v1/health`, `/api/capabilities`, `/api/v1/logs`, LLM helpers).
+
+---
+
+## HTTP REST (fleet gateway)
+
+See **[FLEET_GATEWAY.md](FLEET_GATEWAY.md)** for the authoritative table. Typical probes:
+
+- `GET http://127.0.0.1:10841/api/v1/health`
+- `GET http://127.0.0.1:10841/api/capabilities`
 
 ---
 

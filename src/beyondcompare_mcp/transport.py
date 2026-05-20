@@ -1,8 +1,8 @@
 """
-FastMCP 2.14.4+ Dual Transport Configuration
+FastMCP 3.x dual transport for fleet MCP servers.
 
-Standard module for all MCP servers in d:/Dev/repos.
-Provides unified transport configuration for STDIO, HTTP Streamable, and legacy SSE modes.
+Provides unified transport configuration for STDIO, HTTP (uvicorn + unified FastAPI gateway),
+and legacy SSE modes.
 
 Environment Variables:
     MCP_TRANSPORT: Transport mode (stdio, http, sse). Default: stdio
@@ -233,16 +233,33 @@ async def run_server_async(
             host = config["host"]
             port = config["port"]
             path = config["path"]
-            endpoint = f"http://{host}:{port}{path}"
-            logger.info(f"Running in HTTP Streamable mode: {endpoint}")
-            await mcp_app.run_http_async(host=host, port=port, path=path)
+            import uvicorn
+
+            from beyondcompare_mcp.server import ensure_fleet_stack
+
+            asgi_app, _, _ = ensure_fleet_stack()
+            logger.info(
+                "Running HTTP unified gateway on %s:%s (MCP streamable + REST; MCP path %s)",
+                host,
+                port,
+                path,
+            )
+            logger.info("Fleet health: http://%s:%s/api/v1/health", host, port)
+            config_uv = uvicorn.Config(
+                asgi_app,
+                host=host,
+                port=port,
+                log_level="info",
+            )
+            server_uv = uvicorn.Server(config_uv)
+            await server_uv.serve()
 
         elif transport == "sse":
             host = config["host"]
             port = config["port"]
             logger.warning("SSE mode is deprecated. Migrate to HTTP Streamable (--http).")
             logger.info(f"Running in SSE mode: http://{host}:{port}")
-            await mcp_app.run_sse_async(host=host, port=port)
+            await mcp_app.run_async(transport='sse', host=host, port=port)
 
     except asyncio.CancelledError:
         logger.info(f"{server_name} task cancelled")
