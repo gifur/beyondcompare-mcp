@@ -7,6 +7,9 @@
   <a href="https://github.com/PrefectHQ/fastmcp"><img src="https://img.shields.io/badge/FastMCP-3.2-7c5cfc?style=flat-square" alt="FastMCP"></a>
 </p>
 
+
+> 📖 **[Installation Guide](INSTALL.md)** — quick start, manual setup, and troubleshooting
+
 A modern MCP server that provides comprehensive file comparison, multimedia management, and developer workspace tools using Beyond Compare. Features 13 powerful tools for everything from file comparison to repository backup and workspace analysis.
 
 ## Quick Start
