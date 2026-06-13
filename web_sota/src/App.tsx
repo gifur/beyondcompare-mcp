@@ -6,7 +6,7 @@ import { Sync } from '@/pages/sync';
 import { Chat } from '@/pages/chat';
 import { Tools } from '@/pages/tools';
 import { Settings } from '@/pages/settings';
-import { Logs } from '@/pages/logs';
+import Logs from '@/pages/logs';
 import { Actions } from '@/pages/actions';
 
 function App() {

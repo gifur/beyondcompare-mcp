@@ -66,6 +66,22 @@ if _is_stdio_mode:
             def seekable(self) -> bool:
                 return False
 
+            @property
+            def buffer(self):
+                import io
+
+                if not hasattr(self, "_bytes"):
+                    self._bytes = io.BytesIO()
+                return self._bytes
+
+            @property
+            def encoding(self) -> str:
+                return "utf-8"
+
+            @property
+            def errors(self) -> str:
+                return "strict"
+
         # Store original stdout and replace with null device
         # This will be restored before FastMCP.run()
         sys._original_stdout = sys.stdout
