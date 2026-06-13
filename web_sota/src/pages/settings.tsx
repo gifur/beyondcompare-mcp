@@ -1,36 +1,56 @@
-import { useEffect, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { fetchHealth, fetchLlmSettings, fetchOllamaModels, saveLlmSettings } from "@/lib/api";
+import { fetchHealth } from "@/lib/api";
+
+function LLMSettings() {
+    const [providers, setProviders] = useState<Record<string, {name:string}[]>>({});
+    const [selectedProvider, setSelectedProvider] = useState("ollama");
+    const [selectedModel, setSelectedModel] = useState("");
+    useEffect(() => {
+        fetch("/api/llm/providers").then(r => r.json()).then(d => {
+            setProviders(d);
+            const savedP = localStorage.getItem("llm_provider") || "ollama";
+            const savedM = localStorage.getItem("llm_model") || "";
+            setSelectedProvider(savedP);
+            const models = d[savedP === "ollama" ? "ollama" : "lm_studio"] || [];
+            setSelectedModel(savedM && models.some((m:{name:string}) => m.name === savedM) ? savedM : (models[0]?.name || ""));
+        }).catch(() => {
+            setProviders({ ollama: [{name:"llama3.2:3b"}] });
+            setSelectedModel(localStorage.getItem("llm_model") || "llama3.2:3b");
+        });
+    }, []);
+    const save = (p:string, m:string) => { localStorage.setItem("llm_provider", p); localStorage.setItem("llm_model", m); };
+    const models = providers[selectedProvider === "ollama" ? "ollama" : "lm_studio"] || [];
+    return (
+        <div className="space-y-3">
+            <select
+                className="h-9 w-full rounded-md border border-slate-700 bg-slate-900 px-3 text-sm text-slate-200"
+                value={selectedProvider}
+                onChange={(e) => { setSelectedProvider(e.target.value); save(e.target.value, ""); }}
+            >
+                <option value="ollama">Ollama</option>
+                <option value="lm_studio">LM Studio</option>
+            </select>
+            <select
+                className="h-9 w-full rounded-md border border-slate-700 bg-slate-900 px-3 text-sm text-slate-200"
+                value={selectedModel}
+                onChange={(e) => { setSelectedModel(e.target.value); save(selectedProvider, e.target.value); }}
+            >
+                {models.map((m) => <option key={m.name} value={m.name}>{m.name}</option>)}
+            </select>
+        </div>
+    );
+}
 
 export function Settings() {
-  const qc = useQueryClient();
   const health = useQuery({ queryKey: ["health"], queryFn: fetchHealth, refetchInterval: 15000 });
-  const models = useQuery({ queryKey: ["ollama-models"], queryFn: fetchOllamaModels, refetchInterval: 30000 });
-  const llm = useQuery({ queryKey: ["llm-settings"], queryFn: fetchLlmSettings });
-  const [model, setModel] = useState("");
-  const [provider, setProvider] = useState("ollama");
-
-  useEffect(() => {
-    if (llm.data) {
-      setModel(llm.data.model ?? "");
-      setProvider(llm.data.provider ?? "ollama");
-    }
-  }, [llm.data]);
-
-  const save = useMutation({
-    mutationFn: () => saveLlmSettings({ model, provider }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["llm-settings"] }),
-  });
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold tracking-tight text-white">Settings</h2>
-        <p className="text-slate-400">Gateway-detected Beyond Compare and local LLM preferences (Ollama)</p>
+        <p className="text-slate-400">Gateway-detected Beyond Compare and local LLM preferences</p>
       </div>
 
       <div className="grid gap-6">
@@ -56,44 +76,11 @@ export function Settings() {
 
         <Card className="border-slate-800 bg-slate-950/50">
           <CardHeader>
-            <CardTitle className="text-white">Local LLM (Ollama)</CardTitle>
-            <CardDescription className="text-slate-400">
-              Model list is probed at <code className="text-slate-300">OLLAMA_BASE_URL</code> (default 127.0.0.1:11434)
-            </CardDescription>
+            <CardTitle className="text-white">Local LLM</CardTitle>
+            <CardDescription className="text-slate-400">Provider and model selection</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-2">
-              <Label className="text-slate-300">Provider</Label>
-              <Input
-                value={provider}
-                onChange={(e) => setProvider(e.target.value)}
-                className="bg-slate-900 border-slate-800 text-slate-100"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label className="text-slate-300">Model name</Label>
-              <Input
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                placeholder="llama3.2"
-                className="bg-slate-900 border-slate-800 text-slate-100"
-              />
-            </div>
-            {models.data && (
-              <p className="text-xs text-slate-500">
-                Ollama tags: {models.data.ok ? models.data.models.slice(0, 8).join(", ") : models.data.error || "unavailable"}
-              </p>
-            )}
-            <Button
-              type="button"
-              variant="outline"
-              className="border-slate-800 text-slate-300 hover:bg-slate-800"
-              disabled={save.isPending}
-              onClick={() => save.mutate()}
-            >
-              {save.isPending ? "Saving…" : "Save LLM preferences"}
-            </Button>
-            {save.isSuccess && <p className="text-xs text-emerald-400">Saved to in-memory gateway store.</p>}
+          <CardContent>
+            <LLMSettings />
           </CardContent>
         </Card>
       </div>
