@@ -1,10 +1,33 @@
 'use client';
 
 import { APPS_CATALOG } from '@/common/apps-catalog';
-import { LayoutGrid, ExternalLink, HelpCircle } from 'lucide-react';
+import { LayoutGrid, ExternalLink, HelpCircle, RefreshCw } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { useConnection } from '@/store/connection';
 
 export function Topbar() {
+    const { state, lastError } = useConnection();
+
+    const statusColor = state === "connected" ? "text-emerald-500 border-emerald-500/20 bg-emerald-500/10" :
+        state === "connecting" ? "text-amber-500 border-amber-500/20 bg-amber-500/10" :
+        "text-red-500 border-red-500/20 bg-red-500/10";
+
+    const pulseClass = state === "connected" ? "animate-ping bg-emerald-400" :
+        state === "connecting" ? "animate-pulse bg-amber-400" : "bg-red-400";
+
+    const dotBg = state === "connected" ? "bg-emerald-500" :
+        state === "connecting" ? "bg-amber-500" : "bg-red-500";
+
+    const statusLabel = state === "connected" ? "System Online" :
+        state === "connecting" ? "Connecting..." : `Offline${lastError ? ` (${lastError.slice(0, 60)})` : ""}`;
+
+    const handleRestart = async () => {
+        try {
+            const { invoke } = await import("@tauri-apps/api/core");
+            await invoke("start_backend");
+        } catch { /* not in Tauri */ }
+    };
+
     return (
         <header className="flex h-14 items-center justify-between border-b border-slate-800 bg-slate-950/50 px-6 backdrop-blur-xl">
             <div className="flex items-center gap-4">
@@ -15,12 +38,17 @@ export function Topbar() {
 
             <div className="flex items-center gap-2">
                 {/* System Status Indicator */}
-                <div className="mr-4 flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-xs text-emerald-500 border border-emerald-500/20">
+                <div data-testid="connection-status" className={`mr-4 flex items-center gap-2 rounded-full px-3 py-1 text-xs border ${statusColor}`}>
                     <span className="relative flex h-2 w-2">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+                        <span className={`absolute inline-flex h-full w-full rounded-full ${pulseClass} opacity-75`}></span>
+                        <span className={`relative inline-flex h-2 w-2 rounded-full ${dotBg}`}></span>
                     </span>
-                    System Online
+                    <span data-testid="connection-label">{statusLabel}</span>
+                    {state !== "connected" && (
+                        <button data-testid="restart-backend" onClick={handleRestart} title="Restart Backend" className="ml-1 hover:text-white transition-colors">
+                            <RefreshCw className="w-3 h-3" />
+                        </button>
+                    )}
                 </div>
 
                 {/* Global Apps Navigation */}

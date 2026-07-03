@@ -1653,6 +1653,23 @@ def _mount_gateway_routes(app: FastAPI, core: BeyondCompareMCP) -> None:
             },
         }
 
+    @app.get("/api/v1/diagnostics")
+    async def api_diagnostics():
+        try:
+            import psutil
+            cpu = psutil.cpu_percent()
+            mem = psutil.virtual_memory().percent
+            disk = psutil.disk_usage("/").percent
+        except ImportError:
+            cpu = mem = disk = None
+        return {
+            "success": True,
+            "backend": {"port": int(os.environ.get("MCP_PORT", "10841")), "status": "running", "uptime": int(time.time() - _gateway_start)},
+            "system": {"cpu_percent": cpu, "memory_percent": mem, "disk_percent": disk},
+            "tools": {"total": 0},
+            "cua_status": {"tesseract_available": False, "window_found": False},
+        }
+
     @app.get("/api/capabilities")
     async def api_capabilities():
         return {

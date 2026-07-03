@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { fetchHealth } from "@/lib/api";
+import { API_BASE, fetchHealth } from "@/lib/api";
 
 function LLMSettings() {
     const [providers, setProviders] = useState<Record<string, {name:string}[]>>({});
     const [selectedProvider, setSelectedProvider] = useState("ollama");
     const [selectedModel, setSelectedModel] = useState("");
     useEffect(() => {
-        fetch("/api/llm/providers").then(r => r.json()).then(d => {
+        fetch(`${API_BASE}/api/llm/providers`).then(r => r.json()).then(d => {
             setProviders(d);
             const savedP = localStorage.getItem("llm_provider") || "ollama";
             const savedM = localStorage.getItem("llm_model") || "";

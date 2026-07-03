@@ -1,14 +1,49 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Sidebar } from './sidebar';
 import { Topbar } from './topbar';
+import { useConnection } from '@/store/connection';
+import { useZoom } from '@/lib/useZoom';
+import { API_BASE } from '@/lib/api';
 // import { Toaster } from '@/components/ui/toaster';
+
+const BACKOFF = [1, 2, 4, 8, 16, 30];
 
 interface AppLayoutProps {
     children: React.ReactNode;
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
+    useZoom();
     const [collapsed, setCollapsed] = useState(false);
+    const attemptRef = useRef(0);
+    const timerRef = useRef<ReturnType<typeof setTimeout>>();
+
+    const tick = useCallback(async () => {
+        try {
+            const r = await fetch(`${API_BASE}/api/v1/health`, { signal: AbortSignal.timeout(5000) });
+            if (r.ok) { useConnection.setState({ state: "connected" }); attemptRef.current = 0; }
+            else useConnection.setState({ state: "offline", lastError: `HTTP ${r.status}` });
+        } catch (e) {
+            useConnection.setState({ state: "offline", lastError: (e as Error).message });
+        }
+        attemptRef.current = Math.min(++attemptRef.current, BACKOFF.length - 1);
+        timerRef.current = setTimeout(tick, BACKOFF[attemptRef.current] * 1000);
+    }, []);
+
+    useEffect(() => {
+        tick();
+        (async () => {
+            try {
+                const { listen } = await import("@tauri-apps/api/event");
+                const unlisten = await listen<string>("backend-status", (event) => {
+                    if (event.payload === "ready") useConnection.setState({ state: "connected" });
+                    else if (event.payload?.startsWith("error:")) useConnection.setState({ state: "error", lastError: event.payload });
+                });
+                return () => { unlisten(); clearTimeout(timerRef.current); };
+            } catch { return () => clearTimeout(timerRef.current); }
+        })();
+        return () => clearTimeout(timerRef.current);
+    }, [tick]);
 
     // Persist sidebar state
     useEffect(() => {

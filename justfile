@@ -1,4 +1,5 @@
-﻿set windows-shell := ["pwsh.exe", "-NoLogo", "-Command"]
+set windows-shell := ["pwsh.exe", "-NoLogo", "-Command"]
+import 'scripts/just/fleet.just'
 
 # Open the interactive recipe dashboard in the browser
 default:
@@ -41,3 +42,7 @@ audit-deps:
     Set-Location '{{justfile_directory()}}'
     uv run safety check
 
+# CUA-NSIS smoke test
+cua-nsis-test:
+    Set-Location '{{justfile_directory()}}'
+    uv run python scripts/cua-smoke.py
