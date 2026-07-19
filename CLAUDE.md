@@ -1,18 +1,23 @@
-# beyondcompare-mcp — Claude Code Guide
+# beyondcompare-mcp - Claude Code Guide
 
 ## Overview
-Modern MCP server for Beyond Compare file and directory comparison
 
-## Entry Points
-- `uv run beyondcompare-mcp` → `beyondcompare_mcp.cli:main`
+Local stdio MCP server for Beyond Compare file and directory comparison.
 
-## Standards
-- FastMCP 3.2+ portmanteau tool pattern — tools use `operation` enum param
-- Responses: structured dicts with `success`, `message`, domain-specific fields
-- Dual transport: stdio (Claude Desktop) + HTTP (`MCP_TRANSPORT=http`)
-- See [mcp-central-docs](https://github.com/sandraschi/mcp-central-docs) for fleet-wide coding standards
+## Entry Point
+
+- `uv run beyondcompare-mcp` -> `beyondcompare_mcp.cli:main`
+
+## Scope
+
+- stdio transport only
+- FastMCP tool registration in `src/beyondcompare_mcp/server.py`
+- 13 atomic tools are the supported MCP surface
+- MCP prompts and one resource skill are kept as small learning examples
+- No HTTP gateway, web dashboard, native wrapper, MCPB packaging, or agentic sampling layer
 
 ## Key Files
-- `README.md` — full documentation
-- `pyproject.toml` — build config and entry points
-- `AGENTS.md` — OpenAI Codex agent context (if present)
+
+- `README.md` - local usage and tool list
+- `pyproject.toml` - build config and command entry point
+- `AGENTS.md` - OpenAI Codex agent context

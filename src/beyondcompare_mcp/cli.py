@@ -38,41 +38,22 @@ def setup_logging(log_level: str = "INFO") -> None:
     
     In stdio mode, we suppress ALL logging to prevent any interference with JSON-RPC.
     """
-    # Detect if we're in stdio mode (MCP server)
-    is_stdio_mode = (
-        not sys.stdout.isatty() 
-        or os.getenv("MCP_STDIO_MODE", "").lower() == "true"
-        or "stdio" in sys.argv
+    # This command is stdio-only. Keep logs silent so JSON-RPC stdout is clean
+    # when launched by an MCP client, and so manual runs simply wait for input.
+    logging.basicConfig(
+        level=logging.CRITICAL,
+        format="%(message)s",
+        handlers=[logging.StreamHandler(sys.stderr)],
+        force=True,
     )
-    
-    if is_stdio_mode:
-        # CRITICAL: In stdio mode, suppress ALL logging to prevent stdout pollution
-        # Even stderr logging can cause issues if Antigravity is strict about it
-        logging.basicConfig(
-            level=logging.CRITICAL,  # Only CRITICAL, suppress everything else
-            format="%(message)s",
-            handlers=[logging.StreamHandler(sys.stderr)],
-            force=True,
-        )
-        # Suppress all loggers
-        root_logger = logging.getLogger()
-        root_logger.setLevel(logging.CRITICAL)
-        root_logger.handlers = []
-        for logger_name in ['fastmcp', 'mcp', 'httpx', 'httpcore', 'h11', 'uvicorn', 'asyncio', 'beyondcompare_mcp']:
-            log = logging.getLogger(logger_name)
-            log.setLevel(logging.CRITICAL)
-            log.handlers = []
-            log.propagate = False
-    else:
-        # Normal mode - use requested log level
-        level = getattr(logging, log_level.upper(), logging.INFO)
-        logging.basicConfig(
-            level=level,
-            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-            handlers=[
-                logging.StreamHandler(sys.stderr),  # Use stderr instead of stdout
-            ],
-        )
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.CRITICAL)
+    root_logger.handlers = []
+    for logger_name in ["fastmcp", "mcp", "asyncio", "beyondcompare_mcp"]:
+        log = logging.getLogger(logger_name)
+        log.setLevel(logging.CRITICAL)
+        log.handlers = []
+        log.propagate = False
 
 
 def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
@@ -111,7 +92,7 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
 
 
 def main(args: Optional[List[str]] = None) -> int:
-    """Run the Beyond Compare MCP server from the command line (fleet transport + gateway)."""
+    """Run the local Beyond Compare MCP server over stdio."""
     argv = list(args) if args is not None else sys.argv[1:]
     if "--version" in argv or "-V" in argv:
         from . import __version__
@@ -119,23 +100,9 @@ def main(args: Optional[List[str]] = None) -> int:
         print(f"Beyond Compare MCP Server v{__version__}")
         return 0
 
-    pre = argparse.ArgumentParser(add_help=False)
-    pre.add_argument(
-        "--log-level",
-        type=str,
-        default=settings.LOG_LEVEL,
-        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-    )
-    pre.add_argument("--bc-path", type=str, default=None)
-    pre.add_argument("--scripts-dir", type=str, default=None)
-    known, rest = pre.parse_known_args(argv)
-    setup_logging(known.log_level)
+    parsed = parse_args(argv)
+    setup_logging(parsed.log_level)
     logger = logging.getLogger(__name__)
-
-    if known.bc_path:
-        os.environ["BEYOND_COMPARE_PATH"] = known.bc_path
-    if known.scripts_dir:
-        os.environ["BC_SCRIPTS_DIR"] = known.scripts_dir
 
     try:
         if os.name == "nt":
@@ -149,10 +116,12 @@ def main(args: Optional[List[str]] = None) -> int:
             except (ImportError, OSError, AttributeError):
                 pass
 
-        sys.argv = [sys.argv[0]] + rest
-        from .server import run_gateway_main
+        from .server import BeyondCompareMCP
 
-        run_gateway_main()
+        BeyondCompareMCP(
+            bc_path=parsed.bc_path,
+            scripts_dir=parsed.scripts_dir,
+        ).run()
         return 0
     except KeyboardInterrupt:
         logger.info("Shutting down Beyond Compare MCP Server...")

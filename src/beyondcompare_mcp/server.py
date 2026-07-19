@@ -110,10 +110,6 @@ if _is_stdio_mode:
     for logger_name in [
         "fastmcp",
         "mcp",
-        "httpx",
-        "httpcore",
-        "h11",
-        "uvicorn",
         "asyncio",
     ]:
         log = logging.getLogger(logger_name)
@@ -128,28 +124,21 @@ import platform
 import shutil
 import subprocess
 import tempfile
-import time
-import json
-import fnmatch
-import hashlib
-from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union, Set
+from typing import Any, Dict, List, Optional, Union
 
-from fastapi import Body, FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
 from fastmcp import FastMCP
-from fastmcp.server import create_proxy
 
 from .config import settings
 from .exceptions import (
-    BeyondCompareError,
     BeyondCompareNotInstalledError,
     BeyondCompareCommandError,
     BeyondCompareTimeoutError,
     BeyondCompareScriptError,
 )
 from .multimedia_scanner import MultimediaDriveScanner
+from .prompts import register_prompts
+from .skills import register_skill_resources
 from .tools.developer import (
     DevRepositoryBackup,
     WorkspaceAnalyzer,
@@ -161,7 +150,7 @@ logger = logging.getLogger(__name__)
 
 
 class BeyondCompareMCP:
-    """Beyond Compare MCP server implementation (FastMCP 3.x unified gateway)."""
+    """Beyond Compare MCP server implementation for local stdio clients."""
 
     def __init__(
         self,
@@ -174,7 +163,7 @@ class BeyondCompareMCP:
         Args:
             bc_path: Path to Beyond Compare executable
             scripts_dir: Directory for temporary script files
-            mcp: Optional FastMCP instance (e.g. from FastMCP.from_fastapi); if omitted, a standalone instance is created
+            mcp: Optional FastMCP instance; if omitted, a standalone instance is created
         """
         self.bc_path = self._find_bc_executable(bc_path)
         self.scripts_dir = Path(scripts_dir or settings.BC_SCRIPTS_DIR)
@@ -191,21 +180,10 @@ class BeyondCompareMCP:
 
         self.mcp = mcp if mcp is not None else FastMCP(name="Beyond Compare MCP")
 
-        # ── MCP Bridge (ProxyProvider) ────────────────────────────────────────────
-        _bridge_proxies: list[str] = []
-        bridge_urls = os.getenv("MCP_BRIDGE_URLS", "")
-        if bridge_urls:
-            for url in bridge_urls.split(","):
-                url = url.strip()
-                if url:
-                    try:
-                        self.mcp.add_provider(create_proxy(url))
-                        _bridge_proxies.append(url)
-                    except Exception:
-                        pass
-
         # Register MCP tools
         self._register_tools()
+        register_prompts(self.mcp)
+        register_skill_resources(self.mcp)
 
     def _find_bc_executable(self, bc_path: Optional[str] = None) -> Path:
         """Find the Beyond Compare executable."""
@@ -1569,7 +1547,7 @@ class BeyondCompareMCP:
             }
 
     def run(self) -> None:
-        """Blocking stdio run (legacy). Prefer ``run_gateway_main`` / transport."""
+        """Run the MCP server over stdio."""
         if _is_stdio_mode and hasattr(sys, "_original_stdout"):
             sys.stdout = sys._original_stdout
             if os.name == "nt":
@@ -1593,245 +1571,15 @@ class BeyondCompareMCP:
                 logger.info("Beyond Compare path: %s", self.bc_path)
             else:
                 logger.warning("Beyond Compare executable not found")
-        asyncio.run(self.mcp.run_stdio_async())
+        asyncio.run(self.mcp.run_stdio_async(show_banner=False))
 
 
-# --- Fleet unified gateway (FastAPI + FastMCP.from_fastapi) ---
-
-_gateway_start = time.time()
-_fleet_initialized = False
-_fastapi_app: Optional[FastAPI] = None
-_fleet_mcp: Optional[FastMCP] = None
-_fleet_core: Optional[BeyondCompareMCP] = None
-
-
-@asynccontextmanager
-async def _fleet_lifespan(fastapi_app: FastAPI):
-    from .log_ring import append_log
-
-    append_log({"event": "gateway_startup", "server": "beyondcompare-mcp"})
-    yield
-    append_log({"event": "gateway_shutdown", "server": "beyondcompare-mcp"})
-
-
-def _mount_gateway_routes(app: FastAPI, core: BeyondCompareMCP) -> None:
-    from ._version import __version__
-    from .log_ring import append_log, get_logs
-
-    @app.middleware("http")
-    async def _request_ring(request: Request, call_next):
-        t0 = time.time()
-        response = await call_next(request)
-        append_log(
-            {
-                "event": "http",
-                "path": request.url.path,
-                "method": request.method,
-                "status": response.status_code,
-                "ms": int((time.time() - t0) * 1000),
-            }
-        )
-        return response
-
-    @app.get("/api/v1/health")
-    async def api_health():
-        exe = Path(core.bc_path)
-        ok_bc = exe.exists()
-        return {
-            "status": "online",
-            "server": {"name": "beyondcompare-mcp", "version": __version__},
-            "beyond_compare": {
-                "detected": ok_bc,
-                "executable": str(core.bc_path),
-                "scripts_dir": str(core.scripts_dir),
-            },
-            "system": {"uptime_s": time.time() - _gateway_start},
-            "fleet": {
-                "dashboard_frontend": "http://127.0.0.1:10840",
-                "gateway_port": int(os.environ.get("MCP_PORT", "10841")),
-                "mcp_path": os.environ.get("MCP_PATH", "/mcp"),
-            },
-        }
-
-    @app.get("/api/v1/diagnostics")
-    async def api_diagnostics():
-        try:
-            import psutil
-            cpu = psutil.cpu_percent()
-            mem = psutil.virtual_memory().percent
-            disk = psutil.disk_usage("/").percent
-        except ImportError:
-            cpu = mem = disk = None
-        return {
-            "success": True,
-            "backend": {"port": int(os.environ.get("MCP_PORT", "10841")), "status": "running", "uptime": int(time.time() - _gateway_start)},
-            "system": {"cpu_percent": cpu, "memory_percent": mem, "disk_percent": disk},
-            "tools": {"total": 0},
-            "cua_status": {"tesseract_available": False, "window_found": False},
-        }
-
-    @app.get("/api/capabilities")
-    async def api_capabilities():
-        return {
-            "status": "ok",
-            "server": {"name": "beyondcompare-mcp", "version": __version__, "fastmcp": "3.x"},
-            "tool_surface": {
-                "atomic": [
-                    "compare_files",
-                    "compare_folders",
-                    "sync_folders",
-                    "multimedia_drive_scanner",
-                    "find_multimedia_duplicates",
-                    "detect_usb_drives",
-                    "backup_dev_repositories",
-                    "analyze_dev_workspace",
-                    "scan_repo_health",
-                    "cleanup_dev_artifacts",
-                    "find_duplicate_code",
-                    "compare_workspace_snapshots",
-                    "selective_restore",
-                ],
-                "agentic": ["beyondcompare_agentic_workflow", "beyondcompare_sampling_hint"],
-            },
-            "endpoints": {
-                "health": "/api/v1/health",
-                "logs": "/api/v1/logs",
-                "capabilities": "/api/capabilities",
-                "llm_settings": "/api/v1/llm/settings",
-                "llm_models": "/api/v1/llm/models",
-            },
-        }
-
-    @app.get("/api/v1/logs")
-    async def api_logs(limit: int = 200):
-        return {"entries": get_logs(min(limit, 500))}
-
-    ollama_base = os.environ.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
-    llm_store: dict[str, str] = {"provider": "ollama", "model": ""}
-
-    @app.get("/api/v1/llm/settings")
-    async def llm_settings_get():
-        return dict(llm_store)
-
-    @app.post("/api/v1/llm/settings")
-    async def llm_settings_post(body: Optional[Dict[str, Any]] = Body(default=None)):
-        data = body if isinstance(body, dict) else {}
-        model = str(data.get("model") or "").strip()
-        provider = str(data.get("provider") or "ollama").strip()
-        llm_store["model"] = model
-        llm_store["provider"] = provider
-        return {"ok": True, "settings": dict(llm_store)}
-
-    @app.get("/api/v1/llm/models")
-    async def llm_models():
-        import httpx
-
-        try:
-            async with httpx.AsyncClient(timeout=4.0) as client:
-                r = await client.get(f"{ollama_base.rstrip('/')}/api/tags")
-                if r.status_code == 200:
-                    models = [m.get("name", "") for m in r.json().get("models", [])]
-                    return {"ok": True, "models": models, "base_url": ollama_base}
-        except Exception as e:
-            return {"ok": False, "models": [], "error": str(e), "base_url": ollama_base}
-        return {"ok": False, "models": [], "base_url": ollama_base}
-
-
-def ensure_fleet_stack(
+def main(
     bc_path: Optional[str] = None,
     scripts_dir: Optional[str] = None,
-) -> tuple[FastAPI, FastMCP, BeyondCompareMCP]:
-    """Build (once) the FastAPI + FastMCP unified gateway used by stdio, HTTP, and uvicorn."""
-    global _fleet_initialized, _fastapi_app, _fleet_mcp, _fleet_core
-    if _fleet_initialized and _fastapi_app and _fleet_mcp and _fleet_core:
-        return _fastapi_app, _fleet_mcp, _fleet_core
-
-    fastapi_app = FastAPI(title="Beyond Compare MCP", lifespan=_fleet_lifespan)
-    fastapi_app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-    mcp = FastMCP.from_fastapi(fastapi_app, name="Beyond Compare MCP")
-    core = BeyondCompareMCP(bc_path=bc_path, scripts_dir=scripts_dir, mcp=mcp)
-    _mount_gateway_routes(fastapi_app, core)
-
-    from .agentic import register_agentic_tools, set_core_getter
-    from .prompts import register_prompts
-    from .skills import register_skill_resources
-
-    register_prompts(mcp)
-    register_skill_resources(mcp)
-    set_core_getter(lambda: core)
-    register_agentic_tools(mcp)
-
-    _fastapi_app = fastapi_app
-    _fleet_mcp = mcp
-    _fleet_core = core
-    _fleet_initialized = True
-    return fastapi_app, mcp, core
-
-
-def get_fleet_mcp() -> FastMCP:
-    return ensure_fleet_stack()[1]
-
-
-def reset_fleet_stack_for_tests() -> None:
-    """Clear gateway singletons (pytest only)."""
-    global _fleet_initialized, _fastapi_app, _fleet_mcp, _fleet_core
-    _fleet_initialized = False
-    _fastapi_app = None
-    _fleet_mcp = None
-    _fleet_core = None
-
-
-class _LazyFleetASGI:
-    """Defer Beyond Compare discovery until first HTTP/MCP request or explicit init."""
-
-    async def __call__(self, scope: dict, receive, send) -> None:
-        real_app, _, _ = ensure_fleet_stack()
-        await real_app(scope, receive, send)
-
-
-app = _LazyFleetASGI()
-
-
-def run_gateway_main(argv: list[str] | None = None) -> None:
-    """CLI / ``python -m beyondcompare_mcp.server`` entry with fleet transport flags."""
-    from .transport import create_argument_parser, run_server
-
-    if not _is_stdio_mode:
-        logging.basicConfig(
-            level=logging.INFO,
-            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-            handlers=[logging.StreamHandler(sys.stderr)],
-        )
-
-    parser = create_argument_parser("beyondcompare-mcp")
-    parser.add_argument(
-        "--bc-path",
-        type=str,
-        default=settings.BEYOND_COMPARE_PATH,
-        help="Path to Beyond Compare executable (default: settings / env / auto-detect)",
-    )
-    parser.add_argument(
-        "--scripts-dir",
-        type=str,
-        default=settings.BC_SCRIPTS_DIR,
-        help="Directory for temporary BC scripts (default: settings / env)",
-    )
-    args = parser.parse_args(argv)
-    ensure_fleet_stack(
-        bc_path=args.bc_path,
-        scripts_dir=args.scripts_dir,
-    )
-    run_server(get_fleet_mcp(), args=args, server_name="beyondcompare-mcp")
-
-
-def main() -> None:
-    run_gateway_main()
+) -> None:
+    """Run a local stdio MCP server."""
+    BeyondCompareMCP(bc_path=bc_path, scripts_dir=scripts_dir).run()
 
 
 if __name__ == "__main__":

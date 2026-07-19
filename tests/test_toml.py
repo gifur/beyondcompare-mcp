@@ -32,21 +32,10 @@ def test_imports():
         print(f"❌ FastMCP import failed: {e}")
         results.append(False)
 
-    # Test MCP SDK import
-    try:
-        import mcp
-        print("✅ MCP SDK import successful")
-        results.append(True)
-    except ImportError as e:
-        print(f"❌ MCP SDK import failed: {e}")
-        results.append(False)
-
     # Test other dependencies
     other_imports = [
         ("pydantic", "Pydantic import"),
         ("dotenv", "python-dotenv import"),
-        ("anyio", "AnyIO import"),
-        ("structlog", "Structlog import"),
     ]
 
     for module, description in other_imports:

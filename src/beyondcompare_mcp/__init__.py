@@ -1,33 +1,9 @@
-"""
-Beyond Compare MCP Server
-========================
+"""Beyond Compare MCP package."""
 
-A modern MCP 2.11+ compliant server that provides file and directory comparison
-capabilities using Beyond Compare. Built with security, reliability, and 
-performance in mind.
-
-Features:
-- File and folder comparison with Beyond Compare's powerful engine
-- Directory synchronization with multiple sync modes
-- Secure input validation and subprocess execution
-- Modern MCP 2.11+ compliance
-- Cross-platform support (Windows, macOS, Linux)
-"""
-
-# Version will be replaced during build
 try:
     from ._version import __version__
 except ImportError:
-    __version__ = "0.1.0"  # fallback version
-
-from .server import BeyondCompareMCP
-from .exceptions import (
-    BeyondCompareError,
-    BeyondCompareNotInstalledError,
-    BeyondCompareCommandError,
-    BeyondCompareTimeoutError,
-    BeyondCompareScriptError,
-)
+    __version__ = "0.1.0"
 
 __all__ = [
     "__version__",
@@ -38,3 +14,23 @@ __all__ = [
     "BeyondCompareTimeoutError",
     "BeyondCompareScriptError",
 ]
+
+
+def __getattr__(name: str):
+    if name == "BeyondCompareMCP":
+        from .server import BeyondCompareMCP
+
+        return BeyondCompareMCP
+
+    if name in {
+        "BeyondCompareError",
+        "BeyondCompareNotInstalledError",
+        "BeyondCompareCommandError",
+        "BeyondCompareTimeoutError",
+        "BeyondCompareScriptError",
+    }:
+        from . import exceptions
+
+        return getattr(exceptions, name)
+
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

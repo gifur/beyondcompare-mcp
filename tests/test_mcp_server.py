@@ -270,9 +270,7 @@ def test_environment_requirements():
         # Test imports
         try:
             import fastmcp
-            import mcp
             import pydantic
-            import anyio
             print("✅ All required packages importable")
         except ImportError as e:
             print(f"❌ Missing required package: {e}")

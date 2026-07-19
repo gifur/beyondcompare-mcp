@@ -39,32 +39,19 @@ def test_fastmcp_import():
         print(f"❌ FastMCP not available at all: {e}")
         return False
 
-def test_mcp_import():
-    """Test MCP SDK import."""
-    print("\nTesting MCP SDK import...")
-
-    try:
-        import mcp
-        print(f"✅ MCP import successful, contents: {dir(mcp)}")
-        return True
-    except ImportError as e:
-        print(f"❌ MCP import failed: {e}")
-        return False
-
 def main():
     """Run import tests."""
-    print("🔍 Testing MCP-related imports...\n")
+    print("🔍 Testing FastMCP imports...\n")
 
     fastmcp_ok = test_fastmcp_import()
-    mcp_ok = test_mcp_import()
 
     print("\n" + "="*50)
-    if fastmcp_ok and mcp_ok:
-        print("🎉 All MCP imports working!")
+    if fastmcp_ok:
+        print("🎉 FastMCP imports working!")
     else:
         print("⚠️  Some imports failed - need to fix dependencies")
 
-    return 0 if (fastmcp_ok and mcp_ok) else 1
+    return 0 if fastmcp_ok else 1
 
 if __name__ == "__main__":
     exit(main())
