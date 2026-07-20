@@ -98,6 +98,6 @@ uv run ruff format .
 
 ## Requirements
 
-- Python 3.12+
+- Python 3.10+
 - `uv`
 - Beyond Compare 4+ or 5
